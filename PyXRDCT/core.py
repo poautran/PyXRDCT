@@ -13,7 +13,8 @@ warnings.filterwarnings("ignore")
 ### Input ###
 
 PATH = '../nmutils/resources/'
-FILE = 'example.hdf5'
+FILE = 'example.h5'
+SAVE_PATH = '../nmutils/resources/'
 
 ### Collecting data informations ###
 
@@ -65,7 +66,5 @@ for i in range(0,np.size(rawData,2)):
 	progression("Reconstructing data......... ",np.size(rawData,2),i)
 print
 
-#saveHdf5File(s,file_name,mode='stack')
-
-plt.imshow(reconstructedData[:,:,250])
-plt.show()
+saveHdf5File(reconstructedData,SAVE_PATH,'reconstructedData2.h5',mode='sliced')
+saveImage(reconstructedData[:,:,25],SAVE_PATH,'test.png')

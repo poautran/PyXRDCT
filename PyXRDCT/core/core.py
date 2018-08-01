@@ -12,9 +12,9 @@ warnings.filterwarnings("ignore")
 
 ### Input ###
 
-PATH = '../nmutils/resources/'
+PATH = '../resources/'
 FILE = 'example.h5'
-SAVE_PATH = '../nmutils/resources/'
+SAVE_PATH = '../resources/'
 
 ### Collecting data informations ###
 

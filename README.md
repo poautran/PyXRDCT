@@ -5,11 +5,10 @@
 PyXRDCT provides X-Ray Diffraction Computed Tomography reconstruction functions.
 The library gives functions for correcting diffraction tomography sinogram based on simple mathematics such as center of mass or outliers values.
 
-Installation
-------------
+## Installation
 
-With PIP
-........
+### With PIP
+
 
 The library is currently under TestPyPI at this link:
 

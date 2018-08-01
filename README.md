@@ -43,7 +43,7 @@ The library is currently tested on Python 2.7 over Ubuntu 16.04. Further version
 
 ## Documentation
 
-The user manual is under construction. For an early start, main code to be run and modified is in PyXRDCT/PyXRDCT. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/nmutils/resources.
+The user manual is under construction. For an early start, main code to be run and modified is in PyXRDCT/core. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
 
 
 

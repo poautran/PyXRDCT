@@ -1,2 +1,1 @@
-name = "PyXRDCT"
-import utils
+from utils import *

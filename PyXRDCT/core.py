@@ -66,5 +66,5 @@ for i in range(0,np.size(rawData,2)):
 	progression("Reconstructing data......... ",np.size(rawData,2),i)
 print
 
-saveHdf5File(reconstructedData,SAVE_PATH,'reconstructedData2.h5',mode='sliced')
+saveHdf5File(reconstructedData,SAVE_PATH,'reconstructedData.h5',mode='sliced')
 saveImage(reconstructedData[:,:,25],SAVE_PATH,'test.png')

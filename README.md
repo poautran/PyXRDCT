@@ -1,6 +1,4 @@
 # PyXRDCT: X-Ray Diffraction Computed Tomography reconstruction functions
-=========================================================================
-
 
 PyXRDCT provides X-Ray Diffraction Computed Tomography reconstruction functions.
 The library gives functions for correcting diffraction tomography sinogram based on simple mathematics such as center of mass or outliers values.
@@ -8,7 +6,6 @@ The library gives functions for correcting diffraction tomography sinogram based
 ## Installation
 
 ### With PIP
-
 
 The library is currently under TestPyPI at this link:
 
@@ -18,8 +15,7 @@ To install the library you can run the command:
 
 	pip install --user --index-url https://test.pypi.org/simple/ PyXRDCT
 
-From source code
-................
+### From source code
 
 To install PyXRDCT you can download the source code at this address:
 
@@ -34,22 +30,22 @@ The files and in PyXRDCT-master, then install the library with
 	cd PyXRDCT-master
 	python setup.py sdist bdist_wheel
 
-Dependencies and OS
--------------------
+## Dependencies and OS
+
 
 The library is currently tested on Python 2.7 over Ubuntu 16.04. Further version will be tested in the future.
 
-Requirements :
+### Requirements :
 
 	* numpy 		- 	http://www.numpy.org
 	* scipy 		- 	http://www.scipy.org
 	* matplotlib 		- 	http://matplotlib.sourceforge.net/
 	* h5py	    		-  	http://www.h5py.org/
 
-Documentation
--------------
+## Documentation
 
-The user manual is under construction. For an early start, main code to be run and modified is in PyXRDCT/PyXRDCT/core.py. Functions and other utilities are in PyXRDCT/nmutils/utils/. Examples of raw data are located in the resources folder in PyXRDCT/nmutils/resources.
+
+The user manual is under construction. For an early start, main code to be run and modified is in PyXRDCT/PyXRDCT/core.py. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/nmutils/resources.
 
 
 

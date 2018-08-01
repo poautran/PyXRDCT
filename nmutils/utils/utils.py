@@ -24,7 +24,7 @@ def findOutlierPixels(data,tolerance=3,worry_about_edges=True):
     difference = data - blurred
     threshold = 10*np.std(difference)
 
-    #find the hot pixels, but ignore the edges
+    #Find the hot pixels, but ignore the edges
     hot_pixels = np.nonzero((np.abs(difference[1:-1,1:-1])>threshold) )
     hot_pixels = np.array(hot_pixels) + 1 #because we ignored the first row and first column
 

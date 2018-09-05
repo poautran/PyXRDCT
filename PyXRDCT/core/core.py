@@ -39,7 +39,7 @@ reconstructedData = np.zeros((np.size(rawData,1),np.size(rawData,1),np.size(rawD
 argsortVal = np.argsort(rawTheta)
 if not np.array_equal(theta,rawTheta):
 	sorting = 0
-	while sorting < np.max(rawTheta)-1:
+	while sorting < np.max(argsortVal)-1:
 		sinogramData[sorting,:,:] = rawData[argsortVal[sorting],:,:]
 		progression("Sorting data................ ",np.size(argsortVal),sorting)
 		sorting = sorting+1

@@ -41,8 +41,8 @@ if not np.array_equal(theta,rawTheta):
 	sorting = 0
 	while sorting < np.max(argsortVal)-1:
 		sinogramData[sorting,:,:] = rawData[argsortVal[sorting],:,:]
-		progression("Sorting data................ ",np.size(argsortVal),sorting)
 		sorting = sorting+1
+		progression("Sorting data................ ",np.size(argsortVal)-1,sorting)
 print
 
 #Removing outlier pixels from data

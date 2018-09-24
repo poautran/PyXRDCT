@@ -15,6 +15,7 @@ warnings.filterwarnings("ignore")
 PATH = '../resources/'
 FILE = 'example.h5'
 SAVE_PATH = '../resources/'
+REFERENCE_SLICE_NUMBER = 20
 
 ### Collecting data informations ###
 
@@ -39,25 +40,39 @@ reconstructedData = np.zeros((np.size(rawData,1),np.size(rawData,1),np.size(rawD
 argsortVal = np.argsort(rawTheta)
 if not np.array_equal(theta,rawTheta):
 	sorting = 0
-	while sorting < np.max(rawTheta)-1:
+	while sorting < np.max(argsortVal)-1:
 		sinogramData[sorting,:,:] = rawData[argsortVal[sorting],:,:]
-		progression("Sorting data................ ",np.size(argsortVal),sorting)
+		progression("Sorting data................ ",np.size(argsortVal)-1,sorting)
 		sorting = sorting+1
+print
+
+#Normalizing data
+for i in range(0,np.size(rawData,2)):
+	sinogramData[:,:,i] = normalize(sinogramData[:,:,i])
+	sinogramData[:,:,i] = divideByFirstColumn(sinogramData[:,:,i])	
+	progression("Normalizing data............ ",np.size(rawData,2),i)
+print 
+
+##Deleting lines
+#deleted_line = []
+#for i in range(0,np.size(deleted_line,0)-1):
+#	sinogramData = np.delete(sinogramData, deleted_line[i], axis=0)
+#	theta = np.delete(theta, deleted_line[i], axis=0)
+#	progression("Deleting lines.............. ",np.size(deleted_line,0)-1,i)
+#print	
+
+#Correcting thermal/beam drifts
+CoM = centerOfMass(sinogramData,axis=1,slice=REFERENCE_SLICE_NUMBER)
+for i in range(0,np.size(rawData,2)):
+	sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
+	progression("Correcting drifts........... ",np.size(rawData,2),i)
 print
 
 #Removing outlier pixels from data
 for i in range(0,np.size(rawData,2)):
-	sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=3,worry_about_edges=True)	
-	sinogramData[:,:,i] = divideByFirstColumn(sinogramData[:,:,i])
+	sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=2,worry_about_edges=False)	
 	progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
-print
-
-#Correcting thermal/beam drifts
-for i in range(0,np.size(rawData,2)):
-	CoM = centerOfMass(sinogramData[:,:,i],axis=1)
-	sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
-	progression("Correcting drifts........... ",np.size(rawData,2),i)
-print
+print 
 
 ### Reconstruction ###
 
@@ -68,3 +83,8 @@ print
 
 saveHdf5File(reconstructedData,SAVE_PATH,'reconstructedData.h5',mode='sliced')
 saveImage(reconstructedData[:,:,25],SAVE_PATH,'test.png')
+
+
+
+
+

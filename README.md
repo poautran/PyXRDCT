@@ -23,7 +23,7 @@ To install PyXRDCT you can download the source code at this url:
 
 Then run the following command to unzip the file:
 
-	unzip PyXRDCT-master.zip
+	unzip master.zip
 
 The files and in PyXRDCT-master, then install the library with:
 

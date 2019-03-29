@@ -111,13 +111,14 @@ def divideByFirstColumn(matrix):
     result = (matrix.T / matrix.sum(axis=1)).T
     return result
 
-def centerOfMass(matrix,axis=1):
+def centerOfMass(matrix,axis=1,ref_slice=0):
     """Calculating center of Mass of a matrix along column axis"""
-    x = np.linspace(0,np.size(matrix,axis)-1,np.size(matrix,axis))
-    CoM = np.linspace(0,np.size(matrix,abs(axis-1))-1,np.size(matrix,abs(axis-1)))
-    for i in range(0,np.size(matrix,abs(axis-1))):
-        CoM[i] = np.sum( (x*matrix[i,:])/np.sum(matrix[i,:]) )
-    CoM = CoM - np.size(matrix,axis)/2
+    matrix_flat = matrix[:,:,ref_slice]
+    x = np.linspace(0,np.size(matrix_flat,axis)-1,np.size(matrix_flat,axis))
+    CoM = np.linspace(0,np.size(matrix_flat,abs(axis-1))-1,np.size(matrix_flat,abs(axis-1)))
+    for i in range(0,np.size(matrix_flat,abs(axis-1))):
+        CoM[i] = np.sum( (x*matrix_flat[i,:])/np.sum(matrix_flat[i,:]) )
+    CoM = CoM - np.size(matrix_flat,axis)/2
     return CoM
 
 def fixDrift(s,CoM):

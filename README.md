@@ -5,30 +5,21 @@ The library gives functions for correcting diffraction tomography sinograms base
 
 ## Installation
 
-### With PIP
+### Cloning
 
-The library is currently under TestPyPI at this link:
+The source code is available here by running the command:
 
-	https://test.pypi.org/project/PyXRDCT/
+	git clone https://github.com/poautran/PyXRDCT.git
 
-To install the library you can run the command:
+Then run the following commands to install it:
 
-	pip install --user --index-url https://test.pypi.org/simple/ PyXRDCT
-
-### From source code
-
-To install PyXRDCT you can download the source code at this url:
-
-	https://github.com/poautran/PyXRDCT/archive/master.zip
-
-Then run the following command to unzip the file:
-
-	unzip master.zip
-
-The files and in PyXRDCT-master, then install the library with:
-
-	cd PyXRDCT-master
+	cd PyXRDCT
 	python setup.py sdist bdist_wheel
+
+The package should be working, to test it run:
+
+	ipython
+	import PyXRDCT
 
 ## Dependencies and OS
 
@@ -40,10 +31,19 @@ The library is currently tested on Python 2.7 over Ubuntu 16.04. Further version
 	* scipy 		- 	http://www.scipy.org
 	* matplotlib 		- 	http://matplotlib.sourceforge.net/
 	* h5py	    		-  	http://www.h5py.org/
+	* Others, not detailed yet
 
 ## Documentation
 
-The user manual is under construction. For an early start, main code to be run and modified is in PyXRDCT/core. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
+The user manual is under construction. For an early start, main code to be run is in PyXRDCT/core. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
+
+To start you can add a shortcut on to your .bashrc file such as:
+
+	alias pyxrdct='/path/to/folder/PyXRDCT/PyXRDCT/core.py'
+
+Then run the following command to see all the options:
+
+	pyxrdct -h
 
 
 

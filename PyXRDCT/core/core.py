@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -18,21 +17,21 @@ import argparse
 
 def main():
 	parser = argparse.ArgumentParser(description='This program correct and reconstruct XRD-CT data. See https://github.com/poautran/PyXRDCT for help.')
-	parser.add_argument('INPUT',type=str,help='Input file (.xrdct)')
+	parser.add_argument('INPUT',type=str,help='Input file (.xrdct from generate .xrdct (supported) or .h5 from pyFAI: diff_tomo. See https://pyfai.readthedocs.io/en/latest/man/diff_tomo.html) (not supported yet)')
 	parser.add_argument('-o','--output',type=str,dest='OUTPUT',help='Output path')
 	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 0,1,2,3 to delete lines 0 1 2 and 3 ',dest='DELETE')
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
 	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle',dest='NORMALIZE',action='store_true')
 	parser.add_argument('-ol','--outliers',help='Remove outliers of the sinogram',dest='OUTLIERS',action='store_true')
-	parser.add_argument('-r','--reconstruct',help='Reconstruct data fron corrected sinogram using Filtered Back Projection algorithm',dest='RECONSTRUCT',action='store_true')
+	parser.add_argument('-r','--reconstruct',help='Reconstruct data from corrected sinogram using Filtered Back Projection algorithm',dest='RECONSTRUCT',action='store_true')
 	parser.set_defaults(func=run)
 	args = parser.parse_args()
 	args.func(args)
 
 def run(args):
 	FILE = args.INPUT
-	FILE_NO_EXTENSION = FILE[:-6]
+	FILE_NO_EXTENSION = FILE[:-3]
 	SAVE_PATH = os.path.dirname(os.path.realpath(__file__))
 	print SAVE_PATH
 	if args.OUTPUT:

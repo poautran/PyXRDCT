@@ -21,33 +21,33 @@ def main():
 	parser.add_argument('INPUT',metavar="INPUT", help="List of files. Ex : *.dat", nargs='+')
 	parser.add_argument('-o','--output',type=str,dest='OUTPUT',help='Output path')
 	parser.add_argument('-m','--multiplier',type=int,dest='MULTIPLIER',help='Multiplies data by given number')
-	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle (last 10% -1 of the pattern)',dest='NORMALIZE',action='store_true')
-	parser.add_argument('-t','--theta',help='Store a different value of 2 theta if acquisition is not in correct theta order (Ex -t 11,180 is the command to build theta as theta = i*11%180)',dest='THETA')
+	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle (last 10%% -1 of the pattern)',dest='NORMALIZE',action='store_true')
+	parser.add_argument('-t','--theta',help='Store a different value of 2 theta if acquisition is not in correct theta order (Ex -t 11,180 is the command to build theta as theta = i*11%%180)',dest='THETA')
 	parser.set_defaults(func=run)
 	args = parser.parse_args()
 	args.func(args)
 
 def run(args):
 	FILE = args.INPUT
+	if np.shape(FILE)==(1,):
+		FILE = np.sort(glob.glob(str(FILE[0])))
 	sample_name = re.split('(\d+)',FILE[0])
 	sample_name = sample_name[0]
-	FILE_NO_EXTENSION = FILE[:-4]
 	SAVE_PATH = os.path.dirname(os.path.realpath(__file__))
-	print SAVE_PATH
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT
 	else:
 		print('!!! Warning files will be saved in the current folder because no output was defined.')
-	
 	current_file = np.zeros((1000,2))
 	print 
 	
 	### Grabbing first file to check matrix size
 
 	for i in range(0,len(FILE)):
-		current_file[i] = re.findall(r'\d{2,7}',FILE[i])
+		current_file[i] = re.findall(r'\d{3,7}',FILE[i])
 		row_lines = np.genfromtxt(FILE[0],dtype=float,skip_header=23)
 		progression("Cheking files, matrix size definition ..... ",len(FILE),i)
+	print int(np.max(current_file[0]))
 	pattern = np.zeros((int(np.max(current_file[0])),int(np.max(current_file[1])),int(np.size(row_lines,0))))
 	
 	### Starting sinogram stacking ###3

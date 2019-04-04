@@ -23,6 +23,7 @@ def main():
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
 	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle',dest='NORMALIZE',action='store_true')
+	parser.add_argument('-f','--filter',type=str,help='Multplies the sinograms by a filter to remove contribution of the air. Input must be a binary image with 0 for air and 1 for sample',dest='FILTER')
 	parser.add_argument('-ol','--outliers',help='Remove outliers of the sinogram',dest='OUTLIERS',action='store_true')
 	parser.add_argument('-r','--reconstruct',help='Reconstruct data from corrected sinogram using Filtered Back Projection algorithm',dest='RECONSTRUCT',action='store_true')
 	parser.set_defaults(func=run)
@@ -107,7 +108,13 @@ def run(args):
 		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
 	else:			
 		print('!!! Warning sinogram file exists, use command -R to overwrite it')
-
+	
+	### Filter ###
+	if args.FILTER:
+		filterData = 
+		for i in range(0,np.size(rawData,2)):
+			
+	
 	### Reconstruction ###
 	if args.RECONSTRUCT:
 		for i in range(0,np.size(rawData,2)):

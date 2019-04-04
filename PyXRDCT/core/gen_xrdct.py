@@ -3,8 +3,7 @@
 
 import sys, os, glob
 PROGPATH = os.path.realpath(__file__)
-PROGPATH = PROGPATH[:-13]
-print PROGPATH
+PROGPATH = PROGPATH[:-17]
 sys.path.append(PROGPATH + 'nmutils')
 from utils import *
 import numpy as np

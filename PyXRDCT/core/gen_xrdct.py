@@ -38,7 +38,7 @@ def run(args):
 		SAVE_PATH = args.OUTPUT
 	else:
 		print('!!! Warning files will be saved in the current folder because no output was defined.')
-	current_file = np.zeros((1000,2))
+	current_file = np.zeros((len(FILE),2))
 	print 
 	
 	### Grabbing first file to check matrix size
@@ -46,8 +46,7 @@ def run(args):
 	for i in range(0,len(FILE)):
 		current_file[i] = re.findall(r'\d{3,7}',FILE[i])
 		row_lines = np.genfromtxt(FILE[0],dtype=float,skip_header=23)
-		progression("Cheking files, matrix size definition ..... ",len(FILE),i)
-	print int(np.max(current_file[0]))
+		progression("Checking files, matrix size definition ..... ",len(FILE),i)
 	pattern = np.zeros((int(np.max(current_file[0])),int(np.max(current_file[1])),int(np.size(row_lines,0))))
 	
 	### Starting sinogram stacking ###3

@@ -47,7 +47,8 @@ def run(args):
 		current_file[i] = re.findall(r'\d{3,7}',FILE[i])
 		row_lines = np.genfromtxt(FILE[0],dtype=float,skip_header=23)
 		progression("Checking files, matrix size definition ..... ",len(FILE),i)
-	pattern = np.zeros((int(np.max(current_file[0])),int(np.max(current_file[1])),int(np.size(row_lines,0))))
+		print int(np.max(current_file[0]))
+	pattern = np.zeros((int(np.max(current_file[:,0])),int(np.max(current_file[:,1])),int(np.size(row_lines,0))))
 	
 	### Starting sinogram stacking ###3
 

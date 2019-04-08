@@ -12,6 +12,7 @@ import warnings
 import h5py
 warnings.filterwarnings("ignore")
 import argparse
+from scipy.ndimage import imread
 
 ### Input ###
 
@@ -32,8 +33,8 @@ def main():
 
 def run(args):
 	FILE = args.INPUT
-	FILE_NO_EXTENSION = FILE[:-3]
-	SAVE_PATH = os.path.dirname(os.path.realpath(__file__))
+	FILE_NO_EXTENSION = FILE[:-6]
+	SAVE_PATH = os.getcwd()
 	print SAVE_PATH
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT
@@ -111,9 +112,10 @@ def run(args):
 	
 	### Filter ###
 	if args.FILTER:
-		filterData = 
+		filterData = args.FILTER
+		filterImage = imread(filterData)
 		for i in range(0,np.size(rawData,2)):
-			
+			pattern[:,:,i] = pattern[:,:,i]*filterImage	
 	
 	### Reconstruction ###
 	if args.RECONSTRUCT:
@@ -121,7 +123,7 @@ def run(args):
 			reconstructedData[:,:,i] = 				reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
 			progression("Reconstructing data......... ",np.size(rawData,2),i)
 		print
-		if (args.OVERWRITE == True | os.path.isfile(FILE_NO_EXTENSION+'_reconstructed.h5') == None):
+		if args.OVERWRITE: 
 			saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed.h5',mode='sliced')
 		else:			
 			print('!!! Warning reconstruction file exists, use command -R to overwrite it')
@@ -130,7 +132,6 @@ def run(args):
 
 if __name__=="__main__":
 	main()
-
 
 
 

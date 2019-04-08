@@ -31,8 +31,7 @@ def run(args):
 	FILE = args.INPUT
 	if np.shape(FILE)==(1,):
 		FILE = np.sort(glob.glob(str(FILE[0])))
-	sample_name = re.split('(\d+)',FILE[0])
-	sample_name = sample_name[0]
+	sample_name = str(raw_input("Enter sample name for saving: "))
 	SAVE_PATH = os.path.dirname(os.path.realpath(__file__))
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT
@@ -60,8 +59,8 @@ def run(args):
 	### Storing special 2-theta ###	
 	
 	theta = np.linspace(int(np.min(current_file[:,0])),int(np.max(current_file[:,0])),int(np.max(current_file[:,0])+1))	
-	special_theta = np.fromstring(args.THETA,dtype=int,sep=',')
 	if args.THETA:
+		special_theta = np.fromstring(args.THETA,dtype=int,sep=',')
 		for i in range(0,np.size(theta,0)):
 			theta[i] = i*(int(special_theta[0])) % int(special_theta[1])
 
@@ -72,7 +71,7 @@ def run(args):
 
 	### Saving ###
 
-	f = h5py.File(sample_name+'_sinogram.xrdct','w')
+	f = h5py.File(args.OUTPUT + sample_name + '_sinogram.xrdct','w')
 	grp = f.create_group("data")
 
 	dset = f.create_dataset('data/data', np.shape(pattern), dtype='f')
@@ -83,4 +82,5 @@ def run(args):
 
 if __name__=="__main__":
 	main()
+
 

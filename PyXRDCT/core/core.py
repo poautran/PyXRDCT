@@ -20,7 +20,7 @@ def main():
 	parser = argparse.ArgumentParser(description='This program correct and reconstruct XRD-CT data. See https://github.com/poautran/PyXRDCT for help.')
 	parser.add_argument('INPUT',type=str,help='Input file (.xrdct from generate .xrdct (supported) or .h5 from pyFAI: diff_tomo. See https://pyfai.readthedocs.io/en/latest/man/diff_tomo.html) (not supported yet)')
 	parser.add_argument('-o','--output',type=str,dest='OUTPUT',help='Output path')
-	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 0,1,2,3 to delete lines 0 1 2 and 3 ',dest='DELETE')
+	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 180,179,114,103 to delete lines 180 179 114 and 103 ',dest='DELETE')
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
 	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle',dest='NORMALIZE',action='store_true')
@@ -90,6 +90,13 @@ def run(args):
 			progression("Deleting lines.............. ",len(deleted_line),i)
 		print	
 
+	#Removing outlier pixels from data
+	if args.OUTLIERS:
+		for i in range(0,np.size(rawData,2)):
+			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=5,worry_about_edges=False)
+			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
+		print
+
 	#Correcting thermal/beam drifts
 	if args.CORRECT:
 		CoM = centerOfMass(sinogramData,axis=1,ref_slice=REFERENCE_SLICE_NUMBER)
@@ -97,26 +104,20 @@ def run(args):
 			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
 			progression("Correcting drifts........... ",np.size(rawData,2),i)
 		print
-		
-	
-	#Removing outlier pixels from data
-	if args.OUTLIERS:	
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = 		findOutlierPixels(sinogramData[:,:,i],tolerance=2,worry_about_edges=False)	
-			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
-		print 
-	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
-		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
-	else:			
-		print('!!! Warning sinogram file exists, use command -R to overwrite it')
 	
 	### Filter ###
 	if args.FILTER:
 		filterData = args.FILTER
 		filterImage = imread(filterData)
 		for i in range(0,np.size(rawData,2)):
-			pattern[:,:,i] = pattern[:,:,i]*filterImage	
-	
+			pattern[:,:,i] = pattern[:,:,i]*filterImage
+
+	### Saving ###
+	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
+		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
+	else:
+		print('!!! Warning sinogram file exists, use command -R to overwrite it')
+
 	### Reconstruction ###
 	if args.RECONSTRUCT:
 		for i in range(0,np.size(rawData,2)):
@@ -127,8 +128,6 @@ def run(args):
 			saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed.h5',mode='sliced')
 		else:			
 			print('!!! Warning reconstruction file exists, use command -R to overwrite it')
-	
-	#saveImage(reconstructedData[:,:,25],SAVE_PATH,'test.png')
 
 if __name__=="__main__":
 	main()

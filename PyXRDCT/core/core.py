@@ -88,12 +88,12 @@ def run(args):
 			sinogramData = np.delete(sinogramData, deleted_line[i], axis=0)
 			theta = np.delete(theta, deleted_line[i], axis=0)
 			progression("Deleting lines.............. ",len(deleted_line),i)
-		print	
+		print
 
 	#Removing outlier pixels from data
 	if args.OUTLIERS:
 		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=5,worry_about_edges=False)
+			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=5,worry_about_edges=False)	
 			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
 		print
 
@@ -121,12 +121,12 @@ def run(args):
 	### Reconstruction ###
 	if args.RECONSTRUCT:
 		for i in range(0,np.size(rawData,2)):
-			reconstructedData[:,:,i] = 				reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
+			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
 			progression("Reconstructing data......... ",np.size(rawData,2),i)
 		print
-		if args.OVERWRITE: 
+		if args.OVERWRITE:
 			saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed.h5',mode='sliced')
-		else:			
+		else:
 			print('!!! Warning reconstruction file exists, use command -R to overwrite it')
 
 if __name__=="__main__":

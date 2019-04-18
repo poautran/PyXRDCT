@@ -60,7 +60,7 @@ def run(args):
 	
 	### Storing special 2-theta ###	
 	
-	theta = np.linspace(int(np.min(current_file[:,0])),int(np.max(current_file[:,0])),int(np.max(current_file[:,0])))
+	theta = np.linspace(int(np.min(current_file[:,0])),int(np.max(current_file[:,0])),int(np.max(current_file[:,0])))	
 	if args.THETA:
 		special_theta = np.fromstring(args.THETA,dtype=int,sep=',')
 		for i in range(0,np.size(theta,0)):

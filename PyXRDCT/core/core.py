@@ -93,7 +93,7 @@ def run(args):
 	#Removing outlier pixels from data
 	if args.OUTLIERS:
 		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=5,worry_about_edges=False)
+			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=5,worry_about_edges=False)	
 			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
 		print
 
@@ -109,11 +109,8 @@ def run(args):
 	if args.FILTER:
 		filterData = args.FILTER
 		filterImage = imread(filterData)
-		filterImage = filterImage/np.max(filterImage)
 		for i in range(0,np.size(rawData,2)):
 			pattern[:,:,i] = pattern[:,:,i]*filterImage
-			plt.imshow(pattern[:,:,i])
-			plt.show()
 	### Saving ###
 	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
 		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')

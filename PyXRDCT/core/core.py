@@ -12,6 +12,7 @@ import warnings
 import h5py
 warnings.filterwarnings("ignore")
 import argparse
+from scipy.ndimage import imread
 
 ### Input ###
 
@@ -19,7 +20,7 @@ def main():
 	parser = argparse.ArgumentParser(description='This program correct and reconstruct XRD-CT data. See https://github.com/poautran/PyXRDCT for help.')
 	parser.add_argument('INPUT',type=str,help='Input file (.xrdct from generate .xrdct (supported) or .h5 from pyFAI: diff_tomo. See https://pyfai.readthedocs.io/en/latest/man/diff_tomo.html) (not supported yet)')
 	parser.add_argument('-o','--output',type=str,dest='OUTPUT',help='Output path')
-	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 0,1,2,3 to delete lines 0 1 2 and 3 ',dest='DELETE')
+	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 180,179,114,103 to delete lines 180 179 114 and 103 ',dest='DELETE')
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
 	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle',dest='NORMALIZE',action='store_true')
@@ -32,8 +33,8 @@ def main():
 
 def run(args):
 	FILE = args.INPUT
-	FILE_NO_EXTENSION = FILE[:-3]
-	SAVE_PATH = os.path.dirname(os.path.realpath(__file__))
+	FILE_NO_EXTENSION = FILE[:-6]
+	SAVE_PATH = os.getcwd()
 	print SAVE_PATH
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT
@@ -87,7 +88,14 @@ def run(args):
 			sinogramData = np.delete(sinogramData, deleted_line[i], axis=0)
 			theta = np.delete(theta, deleted_line[i], axis=0)
 			progression("Deleting lines.............. ",len(deleted_line),i)
-		print	
+		print
+
+	#Removing outlier pixels from data
+	if args.OUTLIERS:
+		for i in range(0,np.size(rawData,2)):
+			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=5,worry_about_edges=False)
+			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
+		print
 
 	#Correcting thermal/beam drifts
 	if args.CORRECT:
@@ -96,37 +104,32 @@ def run(args):
 			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
 			progression("Correcting drifts........... ",np.size(rawData,2),i)
 		print
-		
-	
-	#Removing outlier pixels from data
-	if args.OUTLIERS:	
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = 		findOutlierPixels(sinogramData[:,:,i],tolerance=2,worry_about_edges=False)	
-			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
-		print 
-	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
-		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
-	else:			
-		print('!!! Warning sinogram file exists, use command -R to overwrite it')
 	
 	### Filter ###
 	if args.FILTER:
-		filterData = 
+		filterData = args.FILTER
+		filterImage = imread(filterData)
+		filterImage = filterImage/np.max(filterImage)
 		for i in range(0,np.size(rawData,2)):
-			
-	
+			pattern[:,:,i] = pattern[:,:,i]*filterImage
+			plt.imshow(pattern[:,:,i])
+			plt.show()
+	### Saving ###
+	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
+		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
+	else:
+		print('!!! Warning sinogram file exists, use command -R to overwrite it')
+
 	### Reconstruction ###
 	if args.RECONSTRUCT:
 		for i in range(0,np.size(rawData,2)):
-			reconstructedData[:,:,i] = 				reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
+			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
 			progression("Reconstructing data......... ",np.size(rawData,2),i)
 		print
-		if (args.OVERWRITE == True | os.path.isfile(FILE_NO_EXTENSION+'_reconstructed.h5') == None):
+		if args.OVERWRITE:
 			saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed.h5',mode='sliced')
-		else:			
+		else:
 			print('!!! Warning reconstruction file exists, use command -R to overwrite it')
-	
-	#saveImage(reconstructedData[:,:,25],SAVE_PATH,'test.png')
 
 if __name__=="__main__":
 	main()

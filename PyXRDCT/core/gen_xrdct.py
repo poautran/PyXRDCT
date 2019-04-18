@@ -31,9 +31,8 @@ def run(args):
 	FILE = args.INPUT
 	if np.shape(FILE)==(1,):
 		FILE = np.sort(glob.glob(str(FILE[0])))
-	sample_name = re.split('(\d+)',FILE[0])
-	sample_name = sample_name[0]
-	SAVE_PATH = os.path.dirname(os.path.realpath(__file__))
+	sample_name = str(raw_input("Enter sample name for saving: "))
+	SAVE_PATH = os.getcwd()
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT
 	else:
@@ -45,26 +44,27 @@ def run(args):
 
 	for i in range(0,len(FILE)):
 		current_file[i] = re.findall(r'\d{3,7}',FILE[i])
-		progression("Checking files, matrix size definition ..... ",len(FILE),i)
+		progression("Cheking files, matrix size definition ..... ",len(FILE),i)
 	row_lines = np.genfromtxt(FILE[0],dtype=float,skip_header=23)
-	pattern = np.zeros((int(np.max(current_file[:,0])),int(np.max(current_file[:,1])),int(np.size(row_lines,0))))
-	
-	### Starting sinogram stacking ###3
+	pattern = np.zeros((int(np.max(current_file[:,0])),int(np.max(current_file[:,1])+1),int(np.size(row_lines,0))))
 
+	### Starting sinogram stacking ###
+
+	offset_rot = int(np.min(current_file[:,0]))
+	offset_trans = int(np.min(current_file[:,1]))
 	for i in range(0,len(FILE)):
-		current_file[i] = re.findall(r'\d{2,7}',FILE[i])
+		current_file[i] = re.findall(r'\d{3,7}',FILE[i])
 		row_lines = np.genfromtxt(FILE[i],dtype=float,skip_header=23)
-		pattern[int(current_file[i,0]),int(current_file[i,1]),:] = row_lines[:,1]
+		pattern[int(current_file[i,0])-offset_rot,int(current_file[i,1])-offset_trans,:] = row_lines[:,1]
 		progression("Stacking data................ ",len(FILE),i)
 	
 	### Storing special 2-theta ###	
 	
-	theta = np.linspace(int(np.min(current_file[:,0])),int(np.max(current_file[:,0])),int(np.max(current_file[:,0])+1))	
-	special_theta = np.fromstring(args.THETA,dtype=int,sep=',')
+	theta = np.linspace(int(np.min(current_file[:,0])),int(np.max(current_file[:,0])),int(np.max(current_file[:,0])))
 	if args.THETA:
+		special_theta = np.fromstring(args.THETA,dtype=int,sep=',')
 		for i in range(0,np.size(theta,0)):
 			theta[i] = i*(int(special_theta[0])) % int(special_theta[1])
-
 	### Multiplier ###
 
 	if args.MULTIPLIER:
@@ -72,7 +72,10 @@ def run(args):
 
 	### Saving ###
 
-	f = h5py.File(sample_name+'_sinogram.xrdct','w')
+	if args.OUTPUT:
+		f = h5py.File(args.OUTPUT + sample_name + '_sinogram.xrdct','w')
+	else:
+		f = h5py.File(sample_name + '_sinogram.xrdct','w')
 	grp = f.create_group("data")
 
 	dset = f.create_dataset('data/data', np.shape(pattern), dtype='f')

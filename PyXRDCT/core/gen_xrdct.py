@@ -41,15 +41,13 @@ def run(args):
 	print 
 	
 	### Grabbing first file to check matrix size
-
 	for i in range(0,len(FILE)):
 		current_file[i] = re.findall(r'\d{3,7}',FILE[i])
 		progression("Cheking files, matrix size definition ..... ",len(FILE),i)
-	row_lines = np.genfromtxt(FILE[0],dtype=float,skip_header=23)
+	row_lines = np.genfromtxt(FILE[0],dtype=float,skip_header=28)
 	pattern = np.zeros((int(np.max(current_file[:,0])),int(np.max(current_file[:,1])+1),int(np.size(row_lines,0))))
 
 	### Starting sinogram stacking ###
-
 	offset_rot = int(np.min(current_file[:,0]))
 	offset_trans = int(np.min(current_file[:,1]))
 	for i in range(0,len(FILE)):
@@ -59,19 +57,25 @@ def run(args):
 		progression("Stacking data................ ",len(FILE),i)
 	
 	### Storing special 2-theta ###	
-	
 	theta = np.linspace(int(np.min(current_file[:,0])),int(np.max(current_file[:,0])),int(np.max(current_file[:,0])))	
 	if args.THETA:
 		special_theta = np.fromstring(args.THETA,dtype=int,sep=',')
 		for i in range(0,np.size(theta,0)):
 			theta[i] = i*(int(special_theta[0])) % int(special_theta[1])
-	### Multiplier ###
 
+	### Normalize ###
+	if args.NORMALIZE:
+		normValue = int(np.around(np.size(pattern,2)*0.05, decimals=1))
+		print normValue
+		for i in range(0,np.size(pattern,0)):
+			for j in range(0,np.size(pattern,1)):
+				pattern[i,j,:] = pattern[i,j,:]/np.average(pattern[i,j,:-normValue])
+
+	### Multiplier ###
 	if args.MULTIPLIER:
 		pattern = pattern*int(args.MULTIPLIER)
 
 	### Saving ###
-
 	if args.OUTPUT:
 		f = h5py.File(args.OUTPUT + sample_name + '_sinogram.xrdct','w')
 	else:

@@ -41,7 +41,7 @@ def run(args):
 	else:
 		print('!!! Warning files will be saved in the current folder because no output was defined.')
 
-	REFERENCE_SLICE_NUMBER = 10
+	REFERENCE_SLICE_NUMBER = 50
 
 	### Collecting data informations ###
 
@@ -77,7 +77,8 @@ def run(args):
 	if args.NORMALIZE:
 		for i in range(0,np.size(rawData,2)):
 			#sinogramData[:,:,i] = normalize(sinogramData[:,:,i])
-			sinogramData[:,:,i] = divideByFirstColumn(sinogramData[:,:,i])	
+			#sinogramData[:,:,i] = divideByFirstColumn(sinogramData[:,:,i])	
+			sinogramData[:,:,i] = sinogramData[:,:,i]*100000000
 			progression("Normalizing data............ ",np.size(rawData,2),i)
 		print 
 
@@ -109,8 +110,13 @@ def run(args):
 	if args.FILTER:
 		filterData = args.FILTER
 		filterImage = imread(filterData)
+		for i in range(0,len(deleted_line)-1):
+			filterImage = np.delete(filterImage, deleted_line[i+1], axis=0)
 		for i in range(0,np.size(rawData,2)):
-			pattern[:,:,i] = pattern[:,:,i]*filterImage
+			sinogramData[:,:,i] = sinogramData[:,:,i]*filterImage
+			progression("Masking air................. ",np.size(rawData,2),i)
+		print
+
 	### Saving ###
 	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
 		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')

@@ -79,9 +79,7 @@ def run(args):
 	#Normalizing data
 	if args.NORMALIZE:
 		for i in range(0,np.size(rawData,2)):
-			#sinogramData[:,:,i] = normalize(sinogramData[:,:,i])
-			sinogramData[:,:,i] = divideByFirstColumn(sinogramData[:,:,i])	
-			#sinogramData[:,:,i] = sinogramData[:,:,i]
+			sinogramData[:,:,i] = normalize(sinogramData[:,:,i])
 			progression("Normalizing data............ ",np.size(rawData,2),i)
 		print 
 

@@ -12,7 +12,7 @@ from scipy.ndimage.measurements import center_of_mass
 
 #Definig all the functions required to correct and reconstruct sinograms
 
-def findOutlierPixels(data,tolerance=3,worry_about_edges=True):
+def findOutlierPixels(data,tolerance=1,worry_about_edges=True):
     """This function finds the hot or dead pixels in a 2D dataset. 
     tolerance is the number of standard deviations used to cutoff the hot pixels
     If you want to ignore the edges and greatly speed up the code, then set

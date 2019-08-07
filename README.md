@@ -31,6 +31,8 @@ The library is currently tested on Python 2.7 over Ubuntu 16.04. Further version
 	* scipy 		- 	http://www.scipy.org
 	* matplotlib 		- 	http://matplotlib.sourceforge.net/
 	* h5py	    		-  	http://www.h5py.org/
+	* fabio			-	https://github.com/silx-kit/fabio
+	* pyFAI			-	https://pyfai.readthedocs.io/
 	* Others, not detailed yet
 
 ## Documentation

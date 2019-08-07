@@ -16,7 +16,7 @@ def saveImage(s,save_path,file_name):
 	misc.toimage(s).save(save_path+'/'+file_name)
 	print 'File '+file_name+ ' saved'
 
-def saveHdf5File(s,save_path,file_name,mode='stack'):
+def saveHdf5File(s,save_path,file_name,mode='stack',theta='theta'):
 	"""Saving a matrix as a stack or as multiple images in a hdf5 file. Switch saving mode between 
 	'stack' and 'sliced'. File name as to be a string like 'file1'"""
 	f_out = h5py.File(save_path+'/'+file_name,'w')
@@ -29,4 +29,7 @@ def saveHdf5File(s,save_path,file_name,mode='stack'):
 			dset[:,:] = s[:,:,i]
 			progression("Saving data as hdf5 file ",np.size(s,2),i)
 		print
+	if theta:
+		dset_theta = f_out.create_dataset('data/theta', np.shape(theta), dtype='f')
+		dset_theta = theta
 	print 'File '+file_name+ ' saved'

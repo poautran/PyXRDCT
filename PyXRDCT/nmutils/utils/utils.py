@@ -22,7 +22,7 @@ def findOutlierPixels(data,tolerance=3,worry_about_edges=True):
     from scipy.ndimage import median_filter
     blurred = median_filter(data, size=2)
     difference = data - blurred
-    threshold = 10*np.std(difference)
+    threshold = tolerance*np.std(difference)
 
     #Find the hot pixels, but ignore the edges
     hot_pixels = np.nonzero((np.abs(difference[1:-1,1:-1])>threshold) )
@@ -126,7 +126,7 @@ def fixDrift(s,CoM):
     sOut = np.zeros(np.shape(s))
     for i in range(0,np.size(s,0)):
         corrDrift = CoM[i]
-        shift(s[i,:],-corrDrift,sOut[i,:],mode='constant')
+        shift(s[i,:],-corrDrift,sOut[i,:],mode='constant',cval=0)
     return sOut
 
 def reconstruction(sinogram,theta,method='FBP',output_size='None',filter='ramp'):

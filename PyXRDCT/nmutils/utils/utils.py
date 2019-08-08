@@ -100,6 +100,12 @@ def findOutlierPixels(data,tolerance=1,worry_about_edges=True):
             fixed_image[-1,-1] = med
     return fixed_image
 
+def readJson(jsonFile):
+    import json
+    with open(jsonFile) as f:
+        config = json.loads(f)
+    return config
+
 def normalize(matrix):
     matrix_max, matrix_min = matrix.max(), matrix.min()
     matrix_normalized = (matrix - matrix_min)/(matrix_max - matrix_min)

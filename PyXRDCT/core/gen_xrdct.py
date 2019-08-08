@@ -41,7 +41,7 @@ def run(args):
 	else:
 		print('!!! Warning files will be saved in the current folder because no output was defined.')
 	currentFile = np.zeros((len(FILE),2))
-	print 
+
 	### Read json file ###
 	jsonParam = readJson(args.JSON)
 
@@ -65,7 +65,8 @@ def run(args):
 		#	bragg, amorphous = azimutalIntegrator.separate(dataFile, npt_rad=1024, npt_azim=512, unit=jsonParam['unit'], method='splitpixel', percentile=50, mask=None, restore_mask=True)
 		currentFile[i] = re.findall(r'\d{3,7}',FILE[i])
 		pattern[int(currentFile[i,0])-offset_rot,int(currentFile[i,1])-offset_trans,:] = dataY
-		progression("Integrating data............. ",len(FILE),i)	
+		progression("Integrating data............. ",len(FILE),i)
+	print
 
 	### Storing special 2-theta ###	
 	theta = np.linspace(int(np.min(currentFile[:,0])),int(np.max(currentFile[:,0])),int(np.max(currentFile[:,0])))	
@@ -98,6 +99,9 @@ def run(args):
 
 	dset_theta = f.create_dataset('data/theta', np.shape(theta), dtype='f')
 	dset_theta[:] = theta[:]
+
+	dset_dataX = f.create_dataset('data/dataX', np.shape(dataX), dtype='f')
+	dset_dataX[:] = dataX[:]
 
 if __name__=="__main__":
 	main()

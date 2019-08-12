@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 import h5py
+from scipy.ndimage.filters import median_filter
 warnings.filterwarnings("ignore")
 import argparse
 import fabio
@@ -49,7 +50,16 @@ def run(args):
 	for i in range(0,len(FILE)):
 		currentFile[i] = re.findall(r'\d{3,7}',FILE[i])
 		progression("Cheking files, matrix size definition ..... ",len(FILE),i)
-	pattern = np.zeros((int(np.max(currentFile[:,0])),int(np.max(currentFile[:,1])+1),int(jsonParam['nbpt_rad'])))  
+	pattern = np.zeros((int(np.max(currentFile[:,0])),int(np.max(currentFile[:,1])+1),int(jsonParam['nbpt_rad'])))
+
+	### Normalisation matrix ###
+	pico = np.zeros((len(FILE),1))
+	for i in range(len(FILE)):
+		image = fabio.open(FILE[i])
+		counter = image.header["counter_pos"].split(" ")
+		pico[i] = float(counter[7])*0.0000001
+		progression("Importing counter ..... ",len(FILE),i)
+	picoCorrected = median_filter(pico.flat,9,mode='constant')
 
 	### Integration of FILE ###
 	azimutalIntegrator = AzimuthalIntegrator(dist=jsonParam['dist'], poni1=jsonParam['poni1'], poni2=jsonParam['poni2'], rot1=jsonParam['rot1'], rot2=jsonParam['rot2'], rot3=jsonParam['rot3'], pixel1=jsonParam['pixel1'], pixel2=jsonParam['pixel2'], splineFile=jsonParam['splineFile'], detector=jsonParam['detector'], wavelength=jsonParam['wavelength'])
@@ -60,7 +70,7 @@ def run(args):
 	offset_trans = int(np.min(currentFile[:,1]))
 	for i in range(len(FILE)):
 		dataFile = np.array(fabio.open(FILE[i]).data)
-		dataX, dataY = azimutalIntegrator.integrate1d(dataFile, int(jsonParam['nbpt_rad']), filename=None, correctSolidAngle=jsonParam['do_solid_angle'], variance=None, error_model=None, radial_range=(float(jsonParam['radial_range_min']),float(jsonParam['radial_range_max'])), azimuth_range=None, mask=mask, dummy=jsonParam['do_dummy'], delta_dummy=jsonParam['delta_dummy'], polarization_factor=None, method='csr', dark=dark, flat=flat, unit=jsonParam['unit'], safe=True, normalization_factor=1, profile=False, all=False, metadata=None)
+		dataX, dataY = azimutalIntegrator.integrate1d(dataFile, int(jsonParam['nbpt_rad']), filename=None, correctSolidAngle=jsonParam['do_solid_angle'], variance=None, error_model=None, radial_range=(float(jsonParam['radial_range_min']),float(jsonParam['radial_range_max'])), azimuth_range=None, mask=mask, dummy=jsonParam['do_dummy'], delta_dummy=jsonParam['delta_dummy'], polarization_factor=None, method='csr', dark=dark, flat=flat, unit=jsonParam['unit'], safe=True, normalization_factor=picoCorrected[i], profile=False, all=False, metadata=None)
 		#if args.SEPARATE:
 		#	bragg, amorphous = azimutalIntegrator.separate(dataFile, npt_rad=1024, npt_azim=512, unit=jsonParam['unit'], method='splitpixel', percentile=50, mask=None, restore_mask=True)
 		currentFile[i] = re.findall(r'\d{3,7}',FILE[i])

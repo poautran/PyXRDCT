@@ -24,11 +24,9 @@ def main():
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-a','--air',type=str,help='Corrects effect of air with input pattern',dest='AIR')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
-	parser.add_argument('-n','--normalize',help='Normalizes data from average at high angle',dest='NORMALIZE',action='store_true')
 	parser.add_argument('-f','--filter',type=str,help='Multiplies the sinograms by a filter to remove contribution of the air. Input must be a binary image with 0 for air and 1 for sample',dest='FILTER')
 	parser.add_argument('-ol','--outliers',help='Remove outliers of the sinogram',dest='OUTLIERS',action='store_true')
 	parser.add_argument('-r','--reconstruct',help='Reconstruct data from corrected sinogram using Filtered Back Projection algorithm',dest='RECONSTRUCT',action='store_true')
-	parser.add_argument('-p','--papyrus',type=str,help='Substract payrus signal ',dest='PAPYRUS')
 	parser.set_defaults(func=run)
 	args = parser.parse_args()
 	args.func(args)
@@ -76,13 +74,6 @@ def run(args):
 			sorting = sorting+1
 	print
 
-	#Normalizing data
-	if args.NORMALIZE:
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = normalize(sinogramData[:,:,i])
-			progression("Normalizing data............ ",np.size(rawData,2),i)
-		print 
-
 	##Deleting lines
 	if args.DELETE:
 		deleted_line = np.fromstring(args.DELETE,dtype=int,sep=',')
@@ -118,7 +109,6 @@ def run(args):
 			progression("Substacting air............. ",np.size(sinogramData,0),i)
 			plt.show()
 		print
-		
 
 	### Filter ###
 	if args.FILTER:
@@ -143,17 +133,6 @@ def run(args):
 			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
 			progression("Reconstructing data......... ",np.size(rawData,2),i)
 		print
-		
-	
-	### Substract Papyrus ###
-	if args.PAPYRUS:
-		dataPapyrus = np.genfromtxt(args.PAPYRUS,dtype=float)
-		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_SUBPAP'
-		for i in range(0,np.size(reconstructedData,0)):
-			for j in range(0,np.size(reconstructedData,1)):
-				if np.max(reconstructedData[i,j,:]) >= 0.45:
-					reconstructedData[i,j,:] = reconstructedData[i,j,:] - (dataPapyrus[:,1]*(reconstructedData[i,j,REFERENCE_SLICE_NUMBER]/dataPapyrus[REFERENCE_SLICE_NUMBER,1]))
-
 		
 	if args.OVERWRITE:
 		saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed_stack.h5',mode='stack')

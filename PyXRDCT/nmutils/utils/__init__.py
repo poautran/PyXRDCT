@@ -11,6 +11,6 @@ from utils import reconstruction
 from save import saveImage
 from save import saveHdf5File
 
-#Display fumnctions
+#Display functions
 from display import createCircularMask
 from display import progression

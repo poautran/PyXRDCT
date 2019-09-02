@@ -103,8 +103,20 @@ def findOutlierPixels(data,tolerance=1,worry_about_edges=True):
 def readJson(jsonFile):
     import json
     with open(jsonFile) as f:
-        config = json.loads(f)
+        config = json.load(f)
     return config
+
+
+def detect_outlier_position_by_fft(signal, threshold_freq=0.1,
+                                   frequency_amplitude=.001):
+    signal = signal.copy()
+    fft_of_signal = np.fft.fft(signal)
+    outlier = np.max(signal) if abs(np.max(signal)) > abs(np.min(signal)) else np.min(signal)
+    if np.any(np.abs(fft_of_signal[threshold_freq:]) > frequency_amplitude):
+        index_of_outlier = np.where(signal == outlier)
+        return index_of_outlier[0]
+    else:
+        return None
 
 def normalize(matrix):
     matrix_max, matrix_min = matrix.max(), matrix.min()

@@ -23,6 +23,7 @@ def main():
 	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 180,179,114,103 to delete lines 180 179 114 and 103 ',dest='DELETE')
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-a','--air',type=str,help='Corrects effect of air with input pattern',dest='AIR')
+	parser.add_argument('-e','--extra',type=str,help='Corrects effect of extra contribution with input pattern',dest='EXTRA')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
 	parser.add_argument('-f','--filter',type=str,help='Multiplies the sinograms by a filter to remove contribution of the air. Input must be a binary image with 0 for air and 1 for sample',dest='FILTER')
 	parser.add_argument('-ol','--outliers',help='Remove outliers of the sinogram',dest='OUTLIERS',action='store_true')
@@ -41,7 +42,7 @@ def run(args):
 	else:
 		print('!!! Warning files will be saved in the current folder because no output was defined.')
 
-	REFERENCE_SLICE_NUMBER = 500
+	REFERENCE_SLICE_NUMBER = 200
 
 	### Collecting data informations ###
 
@@ -57,7 +58,7 @@ def run(args):
 	rawTheta = np.array(inputFile['data/theta'])
 
 	theta = np.sort(rawTheta)
-	rawData = rawData[:,:288,:]
+	#rawData = rawData[:,:288,:]
 
 	sinogramData = np.zeros(np.shape(rawData))
 	reconstructedData = np.zeros((np.size(rawData,1),np.size(rawData,1),np.size(rawData,2)))
@@ -83,22 +84,14 @@ def run(args):
 			progression("Deleting lines.............. ",len(deleted_line),i)
 		print
 
-	#Removing outlier pixels from data
+	### Removing outlier pixels from data ###
 	if args.OUTLIERS:
 		for i in range(0,np.size(rawData,2)):
 			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=10,worry_about_edges=False)	
 			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
 		print
 
-	#Correcting thermal/beam drifts
-	if args.CORRECT:
-		CoM = centerOfMass(sinogramData,axis=1,ref_slice=REFERENCE_SLICE_NUMBER)
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
-			progression("Correcting drifts........... ",np.size(rawData,2),i)
-		print
-
-	### Substract air from raw data ###
+	### Subtract air from raw data ###
 	if args.AIR:
 		dataAir = np.genfromtxt(args.AIR,dtype=float)
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_SUBAIR'
@@ -107,6 +100,27 @@ def run(args):
 				currentAir = dataAir[:,1]*(sinogramData[i,j,96]/dataAir[96,1])
 				sinogramData[i,j,:] = sinogramData[i,j,:]-currentAir
 			progression("Substacting air............. ",np.size(sinogramData,0),i)
+			plt.show()
+		print
+
+
+	### Correcting thermal/beam drifts ###
+	if args.CORRECT:
+		CoM = centerOfMass(sinogramData,axis=1,ref_slice=REFERENCE_SLICE_NUMBER)
+		for i in range(0,np.size(rawData,2)):
+			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
+			progression("Correcting drifts........... ",np.size(rawData,2),i)
+		print
+
+	### Subtract extra patten from raw data ###
+	if args.EXTRA:
+		dataExtra = np.genfromtxt(args.EXTRA,dtype=float)
+		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_SUBPAP'
+		for i in range(0,np.size(sinogramData,0)):
+			for j in range(0,np.size(sinogramData,1)):
+				currentExtra = dataExtra[:,1]*(sinogramData[i,j,147]/dataExtra[147,1])
+				sinogramData[i,j,:] = sinogramData[i,j,:]-currentExtra
+			progression("Substacting extra........... ",np.size(sinogramData,0),i)
 			plt.show()
 		print
 

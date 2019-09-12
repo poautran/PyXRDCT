@@ -80,7 +80,7 @@ def run(args):
 		currentFile[i] = re.findall(r'\d{3,7}',FILE[i])
 		pattern[int(currentFile[i,0])-offset_rot,int(currentFile[i,1])-offset_trans,:] = dataY
 		progression("Integrating data............. ",len(FILE),i)
-	print	
+	print()
 	
 	### Storing special 2-theta ###	
 	theta = np.linspace(int(np.min(currentFile[:,0])),int(np.max(currentFile[:,0])),int(np.max(currentFile[:,0])))	

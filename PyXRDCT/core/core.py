@@ -24,6 +24,7 @@ def main():
 	parser.add_argument('-c','--CoM',help='Correct thermal drifts, beam drift using center of mass',dest='CORRECT',action='store_true')
 	parser.add_argument('-a','--air',type=str,help='Corrects effect of air with input pattern',dest='AIR')
 	parser.add_argument('-e','--extra',type=str,help='Corrects effect of extra contribution with input pattern',dest='EXTRA')
+	parser.add_argument('-p','--pdf',type=str,help='Extract PDF signal from sinogram',dest='PDF')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
 	parser.add_argument('-f','--filter',type=str,help='Multiplies the sinograms by a filter to remove contribution of the air. Input must be a binary image with 0 for air and 1 for sample',dest='FILTER')
 	parser.add_argument('-ol','--outliers',help='Remove outliers of the sinogram',dest='OUTLIERS',action='store_true')
@@ -36,7 +37,7 @@ def run(args):
 	FILE = args.INPUT
 	FILE_NO_EXTENSION = FILE[:-6]
 	SAVE_PATH = os.getcwd()
-	print SAVE_PATH
+	print(SAVE_PATH)
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT
 	else:
@@ -48,7 +49,7 @@ def run(args):
 
 	try:
 		inputFile = h5py.File(FILE,'r')
-		print "File " + FILE + " loaded"
+		print("File " + FILE + " loaded")
 	except ValueError:
 		raise
 
@@ -73,7 +74,7 @@ def run(args):
 			sinogramData[sorting,:,:] = rawData[argsortVal[sorting],:,:]
 			progression("Sorting data................ ",np.size(argsortVal)-2,sorting)
 			sorting = sorting+1
-	print
+	print()
 
 	##Deleting lines
 	if args.DELETE:
@@ -82,14 +83,14 @@ def run(args):
 			sinogramData = np.delete(sinogramData, deleted_line[i], axis=0)
 			theta = np.delete(theta, deleted_line[i], axis=0)
 			progression("Deleting lines.............. ",len(deleted_line),i)
-		print
+		print()
 
 	### Removing outlier pixels from data ###
 	if args.OUTLIERS:
 		for i in range(0,np.size(rawData,2)):
 			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=10,worry_about_edges=False)	
 			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
-		print
+		print()
 
 	### Subtract air from raw data ###
 	if args.AIR:
@@ -101,7 +102,7 @@ def run(args):
 				sinogramData[i,j,:] = sinogramData[i,j,:]-currentAir
 			progression("Substacting air............. ",np.size(sinogramData,0),i)
 			plt.show()
-		print
+		print()
 
 
 	### Correcting thermal/beam drifts ###
@@ -110,9 +111,9 @@ def run(args):
 		for i in range(0,np.size(rawData,2)):
 			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
 			progression("Correcting drifts........... ",np.size(rawData,2),i)
-		print
+		print()
 
-	### Subtract extra patten from raw data ###
+	### Subtract extra pattern from raw data ###
 	if args.EXTRA:
 		dataExtra = np.genfromtxt(args.EXTRA,dtype=float)
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_SUBPAP'
@@ -122,7 +123,26 @@ def run(args):
 				sinogramData[i,j,:] = sinogramData[i,j,:]-currentExtra
 			progression("Substacting extra........... ",np.size(sinogramData,0),i)
 			plt.show()
-		print
+		print()
+
+	### Extract PDF signal ###
+	if args.PDF:
+		from diffpy.srreal.pdfcalculator import PDFCalculator
+		from diffpy.srreal.pdfcalculator import DebyePDFCalculator
+
+		PDFconfig = readPdfConfig(args.PDF)
+		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_PDF'
+		pdfDataFormat = PDFconfig['DEFAULT']['dataformat']
+		pdfMode = PDFconfig['DEFAULT']['mode']
+		pdfWL = float(PDFconfig['DEFAULT']['wavelength'])
+		pdfRpoly = float(PDFconfig['DEFAULT']['rpoly'])
+		pdfQMaxInst = float(PDFconfig['DEFAULT']['qmaxinst'])
+		pdfQMin = float(PDFconfig['DEFAULT']['qmin'])
+		pdfQMax = float(PDFconfig['DEFAULT']['qmax'])
+		pdfRMin = float(PDFconfig['DEFAULT']['rmin'])
+		pdfRMax = float(PDFconfig['DEFAULT']['rmax'])
+		pdfRStep = float(PDFconfig['DEFAULT']['rstep'])
+		pdfDebyeCalculate = DebyePDFCalculator(qmin = pdfQMin,qmax = pdfQMax, rmin = pdfRMin, rmax = pdfRMax, rstep = pdfRStep)
 
 	### Filter ###
 	if args.FILTER:
@@ -133,7 +153,7 @@ def run(args):
 		for i in range(0,np.size(rawData,2)):
 			sinogramData[:,:,i] = sinogramData[:,:,i]*filterImage
 			progression("Masking air................. ",np.size(rawData,2),i)
-		print
+		print()
 
 	### Saving ###
 	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
@@ -146,7 +166,7 @@ def run(args):
 		for i in range(0,np.size(rawData,2)):
 			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
 			progression("Reconstructing data......... ",np.size(rawData,2),i)
-		print
+		print()
 		
 	if args.OVERWRITE:
 		saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed_stack.h5',mode='stack')

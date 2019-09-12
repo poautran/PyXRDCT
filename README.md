@@ -23,7 +23,7 @@ The package should be working, to test it run:
 
 ## Dependencies and OS
 
-The library is currently tested on Python 2.7 over Ubuntu 16.04. Further version will be tested in the future.
+The library is currently tested on Python 3.6.8 over Ubuntu 18.04. Further version will be tested in the future.
 
 ### Requirements :
 

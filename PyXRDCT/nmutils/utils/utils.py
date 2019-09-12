@@ -106,6 +106,11 @@ def readJson(jsonFile):
         config = json.load(f)
     return config
 
+def readPdfConfig(pdfgetx3File):
+    import configparser
+    config = configparser.ConfigParser()
+    config.read(pdfgetx3File)
+    return config
 
 def detect_outlier_position_by_fft(signal, threshold_freq=0.1,
                                    frequency_amplitude=.001):

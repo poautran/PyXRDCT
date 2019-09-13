@@ -1,7 +1,6 @@
 #Utils functions
 from .utils import findOutlierPixels
 from .utils import readJson
-from .utils import readPdfConfig
 from .utils import normalize
 from .utils import divideByFirstColumn
 from .utils import centerOfMass

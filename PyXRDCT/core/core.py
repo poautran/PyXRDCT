@@ -132,7 +132,7 @@ def run(args):
 		cfg.readConfig(args.PDF)
 		pdfget = PDFGetter()
 		pdfget.configure(cfg)
-		sinogramDataPdf = np.zeros((np.size(sinogramData,0),np.size(sinogramData,0),round((cfg.rmax-cfg.rmin)/cfg.rstep)+1))
+		sinogramDataPdf = np.zeros((np.size(sinogramData,0),np.size(sinogramData,1),round((cfg.rmax-cfg.rmin)/cfg.rstep)+1))
 		for i in range(0,np.size(sinogramData,0)):
 			for j in range(0,np.size(sinogramData,1)):
 				currentPdfDataY = sinogramData[i,j,:]
@@ -143,12 +143,13 @@ def run(args):
 				sinogramDataPdf[i,j,:] = pdfResults[1]
 			progression("Extracting PDF.............. ",np.size(sinogramData,0),i)
 		sinogramData = np.copy(sinogramDataPdf)
+		reconstructedData = np.zeros((np.size(sinogramData,1),np.size(sinogramData,1),round((cfg.rmax-cfg.rmin)/cfg.rstep)+1))
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_PDF'
 		print()
 
 	### Saving ###
 	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
-		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
+		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='stack')
 	else:
 		print('!!! Warning sinogram file exists, use command -R to overwrite it')
 
@@ -156,13 +157,13 @@ def run(args):
 	if args.RECONSTRUCT:
 		for i in range(0,np.size(sinogramData,2)):
 			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
-			progression("Reconstructing data......... ",np.size(rawData,2),i)
+			progression("Reconstructing data......... ",np.size(reconstructedData,2),i)
 		print()
 		
-	if args.OVERWRITE:
-		saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed_stack.h5',mode='stack')
-	else:
-		print('!!! Warning reconstruction file exists, use command -R to overwrite it')
+		if args.OVERWRITE:
+			saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed_stack.h5',mode='stack')
+		else:
+			print('!!! Warning reconstruction file exists, use command -R to overwrite it')
 
 
 if __name__=="__main__":

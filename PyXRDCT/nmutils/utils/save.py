@@ -28,7 +28,7 @@ def saveHdf5File(s,save_path,file_name,mode='stack',theta='theta'):
 			dset = f_out.create_dataset('data/'+file_name[:-3]+'_%05d'%i, np.shape(s[:,:,0]), dtype='f')
 			dset[:,:] = s[:,:,i]
 			progression("Saving data as hdf5 file ",np.size(s,2),i)
-		print
+		print()
 	if theta:
 		dset_theta = f_out.create_dataset('data/theta', np.shape(theta), dtype='f')
 		dset_theta = theta

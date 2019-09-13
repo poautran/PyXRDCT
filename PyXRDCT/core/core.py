@@ -12,7 +12,8 @@ import warnings
 import h5py
 warnings.filterwarnings("ignore")
 import argparse
-from scipy.ndimage import imread
+from diffpy.pdfgetx import PDFConfig
+from diffpy.pdfgetx import PDFGetter
 
 ### Input ###
 
@@ -26,7 +27,6 @@ def main():
 	parser.add_argument('-e','--extra',type=str,help='Corrects effect of extra contribution with input pattern',dest='EXTRA')
 	parser.add_argument('-p','--pdf',type=str,help='Extract PDF signal from sinogram',dest='PDF')
 	parser.add_argument('-R','--overwrite',help='Overwrites the calculated sinogram with a new one',dest='OVERWRITE',action='store_true')
-	parser.add_argument('-f','--filter',type=str,help='Multiplies the sinograms by a filter to remove contribution of the air. Input must be a binary image with 0 for air and 1 for sample',dest='FILTER')
 	parser.add_argument('-ol','--outliers',help='Remove outliers of the sinogram',dest='OUTLIERS',action='store_true')
 	parser.add_argument('-r','--reconstruct',help='Reconstruct data from corrected sinogram using Filtered Back Projection algorithm',dest='RECONSTRUCT',action='store_true')
 	parser.set_defaults(func=run)
@@ -57,6 +57,7 @@ def run(args):
 
 	rawData = np.array(inputFile['data/data'])
 	rawTheta = np.array(inputFile['data/theta'])
+	dataX = np.ndarray.flatten(np.array(inputFile['data/dataX']))
 
 	theta = np.sort(rawTheta)
 	#rawData = rawData[:,:288,:]
@@ -122,37 +123,27 @@ def run(args):
 				currentExtra = dataExtra[:,1]*(sinogramData[i,j,147]/dataExtra[147,1])
 				sinogramData[i,j,:] = sinogramData[i,j,:]-currentExtra
 			progression("Substacting extra........... ",np.size(sinogramData,0),i)
-			plt.show()
 		print()
 
 	### Extract PDF signal ###
+	sinogramDataPdf = np.copy(sinogramData)
 	if args.PDF:
-		from diffpy.srreal.pdfcalculator import PDFCalculator
-		from diffpy.srreal.pdfcalculator import DebyePDFCalculator
-
-		PDFconfig = readPdfConfig(args.PDF)
+		cfg = PDFConfig()
+		cfg.readConfig(args.PDF)
+		pdfget = PDFGetter()
+		pdfget.configure(cfg)
+		sinogramDataPdf = np.zeros((np.size(sinogramData,0),np.size(sinogramData,0),round((cfg.rmax-cfg.rmin)/cfg.rstep)+1))
+		for i in range(0,np.size(sinogramData,0)):
+			for j in range(0,np.size(sinogramData,1)):
+				currentPdfDataY = sinogramData[i,j,:]
+				pdfget.getTransformation('gr')
+				pdfget(dataX,currentPdfDataY)
+				pdfResults = pdfget.results
+				pdfResults = pdfResults[8]
+				sinogramDataPdf[i,j,:] = pdfResults[1]
+			progression("Extracting PDF.............. ",np.size(sinogramData,0),i)
+		sinogramData = np.copy(sinogramDataPdf)
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_PDF'
-		pdfDataFormat = PDFconfig['DEFAULT']['dataformat']
-		pdfMode = PDFconfig['DEFAULT']['mode']
-		pdfWL = float(PDFconfig['DEFAULT']['wavelength'])
-		pdfRpoly = float(PDFconfig['DEFAULT']['rpoly'])
-		pdfQMaxInst = float(PDFconfig['DEFAULT']['qmaxinst'])
-		pdfQMin = float(PDFconfig['DEFAULT']['qmin'])
-		pdfQMax = float(PDFconfig['DEFAULT']['qmax'])
-		pdfRMin = float(PDFconfig['DEFAULT']['rmin'])
-		pdfRMax = float(PDFconfig['DEFAULT']['rmax'])
-		pdfRStep = float(PDFconfig['DEFAULT']['rstep'])
-		pdfDebyeCalculate = DebyePDFCalculator(qmin = pdfQMin,qmax = pdfQMax, rmin = pdfRMin, rmax = pdfRMax, rstep = pdfRStep)
-
-	### Filter ###
-	if args.FILTER:
-		filterData = args.FILTER
-		filterImage = imread(filterData)
-		for i in range(0,len(deleted_line)-1):
-			filterImage = np.delete(filterImage, deleted_line[i+1], axis=0)
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = sinogramData[:,:,i]*filterImage
-			progression("Masking air................. ",np.size(rawData,2),i)
 		print()
 
 	### Saving ###
@@ -163,7 +154,7 @@ def run(args):
 
 	### Reconstruction ###
 	if args.RECONSTRUCT:
-		for i in range(0,np.size(rawData,2)):
+		for i in range(0,np.size(sinogramData,2)):
 			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
 			progression("Reconstructing data......... ",np.size(rawData,2),i)
 		print()
@@ -176,6 +167,5 @@ def run(args):
 
 if __name__=="__main__":
 	main()
-
 
 

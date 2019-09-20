@@ -85,9 +85,9 @@ def run(args):
 
 	### Removing outlier pixels from data ###
 	if args.OUTLIERS:
-		for i in range(0,np.size(rawData,2)):
+		for i in range(0,np.size(sinogramData,2)):
 			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=10,worry_about_edges=False)	
-			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
+			progression("Correcting wrong pixels..... ",np.size(sinogramData,2),i)
 		print()
 
 	### Subtract air from raw data ###
@@ -108,10 +108,10 @@ def run(args):
 		thresholdedSinogramData[sinogramData[:,:,REFERENCE_SLICE_NUMBER]>=40] = 1
 		thresholdedSinogramData = binary_fill_holes(thresholdedSinogramData)
 		thresholdedSinogramData = imageFilterBigPart(thresholdedSinogramData)
-		CoM = centerOfMass(thresholdedSinogramData,axis=1)
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
-			progression("Correcting drifts........... ",np.size(rawData,2),i)
+		CoMThresh = centerOfMass(thresholdedSinogramData*sinogramData[:,:,REFERENCE_SLICE_NUMBER],axis=1)
+		for i in range(0,np.size(sinogramData,2)):
+			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoMThresh)
+			progression("Correcting drifts........... ",np.size(sinogramData,2),i)
 		print()
 
 	### Subtract extra pattern from raw data ###
@@ -158,7 +158,7 @@ def run(args):
 	if args.RECONSTRUCT:
 		reconstructedData = np.zeros((np.size(sinogramData,1),np.size(sinogramData,1),np.size(sinogramData,2)))
 		for i in range(0,np.size(sinogramData,2)):
-			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
+			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(sinogramData,1))
 			progression("Reconstructing data......... ",np.size(sinogramData,2),i)
 		print()
 		

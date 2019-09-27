@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import h5py
 from skimage.transform import iradon 
 from scipy.ndimage import shift
+from scipy.ndimage import label
 from scipy.ndimage.measurements import center_of_mass
 
 #Definig all the functions required to correct and reconstruct sinograms
@@ -128,9 +129,9 @@ def divideByFirstColumn(matrix):
     result = (matrix.T / matrix.sum(axis=1)).T
     return result
 
-def centerOfMass(matrix,axis=1,ref_slice=0):
+def centerOfMass(matrix,axis=1):
     """Calculating center of Mass of a matrix along column axis"""
-    matrix_flat = matrix[:,:,ref_slice]
+    matrix_flat = matrix
     x = np.linspace(0,np.size(matrix_flat,axis)-1,np.size(matrix_flat,axis))
     CoM = np.linspace(0,np.size(matrix_flat,abs(axis-1))-1,np.size(matrix_flat,abs(axis-1)))
     for i in range(0,np.size(matrix_flat,abs(axis-1))):
@@ -145,6 +146,16 @@ def fixDrift(s,CoM):
         corrDrift = CoM[i]
         shift(s[i,:],-corrDrift,sOut[i,:],mode='constant',cval=0)
     return sOut
+
+def imageFilterBigPart(image):
+    """ Takes an image and returns a version with only the biggest continuous blob of non-zero elements left. """
+    labeledImage, N = label(image)
+    # first, work out which is the biggest blob (except the background)
+    areas = []
+    for i in range(1, N + 1): # N doesn't include the background
+        areas.append(sum(sum(labeledImage == i)))
+    biggest = np.where(areas == max(areas))[0] + 1
+    return (labeledImage == biggest)
 
 def reconstruction(sinogram,theta,method='FBP',output_size='None',filter='ramp'):
 	"""Reconstructing with Filtered Back Projection by deflaut. Needs theta as 1D matrix, output_size 

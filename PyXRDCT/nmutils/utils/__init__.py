@@ -5,6 +5,7 @@ from .utils import normalize
 from .utils import divideByFirstColumn
 from .utils import centerOfMass
 from .utils import fixDrift
+from .utils import imageFilterBigPart
 from .utils import reconstruction
 
 #Save functions

@@ -12,13 +12,14 @@ import warnings
 import h5py
 warnings.filterwarnings("ignore")
 import argparse
+from scipy.ndimage.morphology import binary_fill_holes
 from diffpy.pdfgetx import PDFConfig
 from diffpy.pdfgetx import PDFGetter
 
 ### Input ###
 
 def main():
-	parser = argparse.ArgumentParser(description='This program correct and reconstruct XRD-CT data. See https://github.com/poautran/PyXRDCT for help.')
+	parser = argparse.ArgumentParser(description='This program corrects and reconstruct XRD-CT data. See https://github.com/poautran/PyXRDCT for help.')
 	parser.add_argument('INPUT',type=str,help='Input file (.xrdct from generate .xrdct (supported) or .h5 from pyFAI: diff_tomo. See https://pyfai.readthedocs.io/en/latest/man/diff_tomo.html) (not supported yet)')
 	parser.add_argument('-o','--output',type=str,dest='OUTPUT',help='Output path')
 	parser.add_argument('-d','--delete',help='Remove live in the sinogram from calculation. Usage: -d 180,179,114,103 to delete lines 180 179 114 and 103 ',dest='DELETE')
@@ -43,7 +44,7 @@ def run(args):
 	else:
 		print('!!! Warning files will be saved in the current folder because no output was defined.')
 
-	REFERENCE_SLICE_NUMBER = 200
+	REFERENCE_SLICE_NUMBER = 100
 
 	### Collecting data informations ###
 
@@ -58,12 +59,8 @@ def run(args):
 	rawData = np.array(inputFile['data/data'])
 	rawTheta = np.array(inputFile['data/theta'])
 	dataX = np.ndarray.flatten(np.array(inputFile['data/dataX']))
-
 	theta = np.sort(rawTheta)
-	#rawData = rawData[:,:288,:]
-
 	sinogramData = np.zeros(np.shape(rawData))
-	reconstructedData = np.zeros((np.size(rawData,1),np.size(rawData,1),np.size(rawData,2)))
 
 	### Corrections ###
 
@@ -88,9 +85,9 @@ def run(args):
 
 	### Removing outlier pixels from data ###
 	if args.OUTLIERS:
-		for i in range(0,np.size(rawData,2)):
+		for i in range(0,np.size(sinogramData,2)):
 			sinogramData[:,:,i] = findOutlierPixels(sinogramData[:,:,i],tolerance=10,worry_about_edges=False)	
-			progression("Correcting wrong pixels..... ",np.size(rawData,2),i)
+			progression("Correcting wrong pixels..... ",np.size(sinogramData,2),i)
 		print()
 
 	### Subtract air from raw data ###
@@ -98,20 +95,23 @@ def run(args):
 		dataAir = np.genfromtxt(args.AIR,dtype=float)
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_SUBAIR'
 		for i in range(0,np.size(sinogramData,0)):
+			currentAir = dataAir[:,1]*(0.85*np.average(sinogramData[i,:,50])/dataAir[50,1])
 			for j in range(0,np.size(sinogramData,1)):
-				currentAir = dataAir[:,1]*(sinogramData[i,j,96]/dataAir[96,1])
 				sinogramData[i,j,:] = sinogramData[i,j,:]-currentAir
 			progression("Substacting air............. ",np.size(sinogramData,0),i)
-			plt.show()
 		print()
-
 
 	### Correcting thermal/beam drifts ###
 	if args.CORRECT:
-		CoM = centerOfMass(sinogramData,axis=1,ref_slice=REFERENCE_SLICE_NUMBER)
-		for i in range(0,np.size(rawData,2)):
-			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoM)
-			progression("Correcting drifts........... ",np.size(rawData,2),i)
+		thresholdedSinogramData = np.copy(sinogramData[:,:,REFERENCE_SLICE_NUMBER])
+		thresholdedSinogramData[sinogramData[:,:,REFERENCE_SLICE_NUMBER]<40] = 0
+		thresholdedSinogramData[sinogramData[:,:,REFERENCE_SLICE_NUMBER]>=40] = 1
+		thresholdedSinogramData = binary_fill_holes(thresholdedSinogramData)
+		thresholdedSinogramData = imageFilterBigPart(thresholdedSinogramData)
+		CoMThresh = centerOfMass(thresholdedSinogramData*sinogramData[:,:,REFERENCE_SLICE_NUMBER],axis=1)
+		for i in range(0,np.size(sinogramData,2)):
+			sinogramData[:,:,i] = fixDrift(sinogramData[:,:,i],CoMThresh)
+			progression("Correcting drifts........... ",np.size(sinogramData,2),i)
 		print()
 
 	### Subtract extra pattern from raw data ###
@@ -120,7 +120,7 @@ def run(args):
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_SUBPAP'
 		for i in range(0,np.size(sinogramData,0)):
 			for j in range(0,np.size(sinogramData,1)):
-				currentExtra = dataExtra[:,1]*(sinogramData[i,j,147]/dataExtra[147,1])
+				currentExtra = dataExtra[:,1]*(sinogramData[i,j,100]/dataExtra[100,1])
 				sinogramData[i,j,:] = sinogramData[i,j,:]-currentExtra
 			progression("Substacting extra........... ",np.size(sinogramData,0),i)
 		print()
@@ -132,34 +132,37 @@ def run(args):
 		cfg.readConfig(args.PDF)
 		pdfget = PDFGetter()
 		pdfget.configure(cfg)
-		sinogramDataPdf = np.zeros((np.size(sinogramData,0),np.size(sinogramData,0),round((cfg.rmax-cfg.rmin)/cfg.rstep)+1))
-		for i in range(0,np.size(sinogramData,0)):
-			for j in range(0,np.size(sinogramData,1)):
+		sinogramDataPdf = np.zeros((np.size(sinogramData,0),np.size(sinogramData,1),round((cfg.rmax-cfg.rmin)/cfg.rstep)+1))
+		for i in range(0,np.size(sinogramDataPdf,0)):
+			for j in range(0,np.size(sinogramDataPdf,1)):
 				currentPdfDataY = sinogramData[i,j,:]
 				pdfget.getTransformation('gr')
 				pdfget(dataX,currentPdfDataY)
 				pdfResults = pdfget.results
 				pdfResults = pdfResults[8]
 				sinogramDataPdf[i,j,:] = pdfResults[1]
-			progression("Extracting PDF.............. ",np.size(sinogramData,0),i)
+			progression("Extracting PDF.............. ",np.size(sinogramDataPdf,0),i)
+		for i in range(0,np.size(sinogramDataPdf,2)):
+			sinogramDataPdf[:,:,i] = np.average(sinogramData[:,:,:],axis=2)*np.copy(sinogramDataPdf[:,:,i])
 		sinogramData = np.copy(sinogramDataPdf)
 		FILE_NO_EXTENSION = FILE_NO_EXTENSION + '_PDF'
 		print()
 
 	### Saving ###
 	if (args.OVERWRITE == True or os.path.isfile(FILE_NO_EXTENSION+'_corrected.h5') == False):
-		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='sliced')
+		saveHdf5File(sinogramData,SAVE_PATH,FILE_NO_EXTENSION+'_corrected.h5',mode='stack')
 	else:
 		print('!!! Warning sinogram file exists, use command -R to overwrite it')
 
 	### Reconstruction ###
 	if args.RECONSTRUCT:
+		reconstructedData = np.zeros((np.size(sinogramData,1),np.size(sinogramData,1),np.size(sinogramData,2)))
 		for i in range(0,np.size(sinogramData,2)):
-			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(rawData,1))
-			progression("Reconstructing data......... ",np.size(rawData,2),i)
+			reconstructedData[:,:,i] = reconstruction(sinogramData[:,:,i],theta,output_size=np.size(sinogramData,1))
+			progression("Reconstructing data......... ",np.size(sinogramData,2),i)
 		print()
 		
-	if args.OVERWRITE:
+	if args.OVERWRITE and args.RECONSTRUCT:
 		saveHdf5File(reconstructedData,SAVE_PATH,FILE_NO_EXTENSION+'_reconstructed_stack.h5',mode='stack')
 	else:
 		print('!!! Warning reconstruction file exists, use command -R to overwrite it')

@@ -1,6 +1,6 @@
-# PyXRDCT: X-Ray Diffraction Computed Tomography reconstruction functions
+# PyXRDCT: X-Ray Diffraction Computed Tomography reconstruction tool
 
-PyXRDCT provides X-Ray Diffraction Computed Tomography reconstruction functions.
+PyXRDCT is a X-Ray Diffraction Computed Tomography reconstruction tool.
 The library gives functions for correcting diffraction tomography sinograms based on simple mathematics such as center of mass or outliers values.
 
 ## Installation
@@ -16,10 +16,9 @@ Then run the following commands to install it:
 	cd PyXRDCT
 	python setup.py sdist bdist_wheel
 
-The package should be working, to test it run:
+The package should be working, to test it run the core file in PyXRDCT/PyXRDCT/core/:
 
-	ipython
-	import PyXRDCT
+	python core.py -h
 
 ## Dependencies and OS
 
@@ -41,7 +40,7 @@ The user manual is under construction. For an early start, main code to be run i
 
 To start you can add a shortcut on to your .bashrc file such as:
 
-	alias pyxrdct='/path/to/folder/PyXRDCT/PyXRDCT/core.py'
+	alias pyxrdct='/path/to/folder/PyXRDCT/PyXRDCT/core/core.py'
 
 Then run the following command to see all the options:
 

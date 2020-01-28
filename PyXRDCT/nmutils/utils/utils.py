@@ -144,7 +144,7 @@ def fixDrift(s,CoM):
     sOut = np.zeros(np.shape(s))
     for i in range(0,np.size(s,0)):
         corrDrift = CoM[i]
-        shift(s[i,:],-corrDrift,sOut[i,:],mode='constant',cval=0)
+        shift(s[i,:],-corrDrift,sOut[i,:],mode='constant',cval=0.0)
     return sOut
 
 def imageFilterBigPart(image):

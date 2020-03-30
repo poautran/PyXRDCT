@@ -9,6 +9,7 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 import argparse
 import re
 import fabio
+from PIL import Image
 
 ### Functions ###
 
@@ -31,6 +32,7 @@ def main():
 	parser.add_argument('-j','--json',dest="JSON", default=".azimint.json", help="Configuration file containing the processing to be done")
 	parser.add_argument('-o','--output',type=str,dest='OUTPUT',help='Output path')
 	parser.add_argument('-d','--display',help='Display result images and integrated patterns',dest='DISPLAY',action='store_true')
+	parser.add_argument('-t','--tifsave',dest='TIFSAVE',help='Save .tif images',action='store_true')
 	parser.set_defaults(func=run)
 	args = parser.parse_args()
 	args.func(args)
@@ -62,6 +64,7 @@ def run(args):
 		dataXO, dataYO = azimutalIntegrator.integrate1d(dataFile, int(jsonParam['nbpt_rad']), filename=None, correctSolidAngle=jsonParam['do_solid_angle'], variance=None, error_model=None, radial_range=(float(jsonParam['radial_range_min']),float(jsonParam['radial_range_max'])), azimuth_range=None, mask=mask, dummy=jsonParam['do_dummy'], delta_dummy=jsonParam['delta_dummy'], polarization_factor=None, method=jsonParam['method'], unit=jsonParam['unit'], safe=True, profile=False, all=False, metadata=None)
 		
 		# Display #
+		currentFILE = FILE[i]
 		if args.DISPLAY:
 			ax1 = plt.subplot(2, 3, 1)
 			ax1.imshow(dataFile,interpolation=None)
@@ -82,12 +85,13 @@ def run(args):
 			plt.legend()
 			plt.show()
 
-		# Save Edf File #		
+		# Save Tif File #		
 
-		# Not ready #
+		if args.TIFSAVE:
+			Image.fromarray(dataBragg).save(currentFILE[:-4] + '_THR' + str(Threshold) + '_bragg.tif')
+			Image.fromarray(dataPowder).save(currentFILE[:-4] + '_THR' + str(Threshold) + '_powder.tif')
 
 		# Save integrated data #
-		currentFILE = FILE[i]
 		f_out_dataPowder = open(currentFILE[:-4] + '_THR' + str(Threshold) + '_powder.dat','w')
 		for j in range(0,np.size(dataXP,0)):
 			f_out_dataPowder.writelines('%07f'%dataXP[j] + '    ' + '%04f'%dataYP[j]  + '\n')

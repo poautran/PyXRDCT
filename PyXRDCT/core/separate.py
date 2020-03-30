@@ -85,6 +85,7 @@ def run(args):
 			plt.legend()
 			plt.show()
 
+<<<<<<< HEAD
 		# Save Tif File #		
 
 		if args.TIFSAVE:
@@ -92,6 +93,14 @@ def run(args):
 			Image.fromarray(dataPowder).save(currentFILE[:-4] + '_THR' + str(Threshold) + '_powder.tif')
 
 		# Save integrated data #
+=======
+		# Save Edf File #		
+
+		# Not ready #
+
+		# Save integrated data #
+		currentFILE = FILE[i]
+>>>>>>> 466611313cbcf19ae9fb37b14571ed6fc8ac5131
 		f_out_dataPowder = open(currentFILE[:-4] + '_THR' + str(Threshold) + '_powder.dat','w')
 		for j in range(0,np.size(dataXP,0)):
 			f_out_dataPowder.writelines('%07f'%dataXP[j] + '    ' + '%04f'%dataYP[j]  + '\n')

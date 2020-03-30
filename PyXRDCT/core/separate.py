@@ -51,6 +51,7 @@ def run(args):
 
 	### Read json file ###
 	jsonParam = readJson(args.JSON)
+
 	### Integration of FILE ###
 	azimutalIntegrator = AzimuthalIntegrator(dist=jsonParam['dist'], poni1=jsonParam['poni1'], poni2=jsonParam['poni2'], rot1=jsonParam['rot1'], rot2=jsonParam['rot2'], rot3=jsonParam['rot3'], pixel1=jsonParam['detector_config']['pixel1'], pixel2=jsonParam['detector_config']['pixel2'], detector=jsonParam['detector'], wavelength=jsonParam['wavelength'])
 	#dark = np.array(fabio.open(jsonParam['dark_current']).data)
@@ -85,7 +86,6 @@ def run(args):
 			plt.legend()
 			plt.show()
 
-<<<<<<< HEAD
 		# Save Tif File #		
 
 		if args.TIFSAVE:
@@ -93,14 +93,7 @@ def run(args):
 			Image.fromarray(dataPowder).save(currentFILE[:-4] + '_THR' + str(Threshold) + '_powder.tif')
 
 		# Save integrated data #
-=======
-		# Save Edf File #		
 
-		# Not ready #
-
-		# Save integrated data #
-		currentFILE = FILE[i]
->>>>>>> 466611313cbcf19ae9fb37b14571ed6fc8ac5131
 		f_out_dataPowder = open(currentFILE[:-4] + '_THR' + str(Threshold) + '_powder.dat','w')
 		for j in range(0,np.size(dataXP,0)):
 			f_out_dataPowder.writelines('%07f'%dataXP[j] + '    ' + '%04f'%dataYP[j]  + '\n')
@@ -113,8 +106,6 @@ def run(args):
 		for j in range(0,np.size(dataXO,0)):
 			f_out_dataFull.writelines('%07f'%dataXO[j] + '    ' + '%04f'%dataYO[j]  + '\n')
 		f_out_dataFull.close()
-
-
 
 if __name__=="__main__":
 	main()

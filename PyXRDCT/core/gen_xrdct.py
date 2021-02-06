@@ -35,7 +35,7 @@ def run(args):
 	FILE = args.INPUT
 	if np.shape(FILE)==(1,):
 		FILE = np.sort(glob.glob(str(FILE[0])))
-	sample_name = str(raw_input("Enter sample name for saving: "))
+	sample_name = str(input("Enter sample name for saving: "))
 	SAVE_PATH = os.getcwd()
 	if args.OUTPUT:
 		SAVE_PATH = args.OUTPUT

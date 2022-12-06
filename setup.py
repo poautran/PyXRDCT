@@ -19,7 +19,7 @@ setuptools.setup(
     classifiers=(
     	"Development Status :: 1 - Planning",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.6.8",
+        "Programming Language :: Python :: 3.8.10",
         "License :: OSI Approved :: MIT License",
         "Operating System :: Unix",
     ),

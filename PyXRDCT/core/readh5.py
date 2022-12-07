@@ -42,8 +42,8 @@ class Input:
         if os.path.isfile(self.data):
             print(self.data)
         else:
-            print('[ERROR] File not found')       
-    
+            raise FileNotFoundError     
+
     def getScanGeometry(self):
         """
         Reads scan Geometry from h5 file.
@@ -68,8 +68,7 @@ class Input:
                 self.y.append(h5In['%s/measurement/%s'%(scan,yMotor)][()])
                 self.rot.append(h5In['%s/measurement/%s'%(scan,rotMotor)][()])
         print('[INFO] Read %s scans'%max(scansInput))
-    
-        
+
     def yMotor(self):
         """
         Finds y motor from provided list.
@@ -81,7 +80,7 @@ class Input:
                     self.yMotor = motor
         print('[INFO] Y motor detected: %s'%self.yMotor)
         return self.yMotor
-        
+
     def rotMotor(self):
         """
         Finds y motor from provided list.
@@ -91,9 +90,9 @@ class Input:
             for motor in rotMotors:
                 if motor in list(h5In['1.1/measurement'].keys()):
                     self.rotMotor = motor
-        print('[INFO] Rot motor detected: %s'%self.rotMotor)        
+        print('[INFO] Rot motor detected: %s'%self.rotMotor)
         return self.rotMotor
-    
+
     def getXrdDetector(self):
         """
         Finds XRD detector.
@@ -114,7 +113,7 @@ class Input:
             for detector in xrfDetectors:
                 if detector in list(h5In['1.1/measurement'].keys()):
                     self.xrfdetector = detector
-                    print('[INFO] XRF detector: %s'%self.xrfdetector)  
+                    print('[INFO] XRF detector: %s'%self.xrfdetector)
 
     def loadData(self):
         """

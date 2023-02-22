@@ -29,6 +29,8 @@ import numpy as np
 import h5py, hdf5plugin
 import os, sys, time
 
+import saveh5
+
 class Input:
     """
     Class to input data for processing XRD/XRF/PDF-CT and 3DXRD.
@@ -37,12 +39,12 @@ class Input:
         """
         Initialize data path.
         """
-        self.data = dataPath
-        self.detector = []
-        if os.path.isfile(self.data):
-            print(self.data)
-        else:
-            raise FileNotFoundError     
+        self.dataPath = dataPath
+        self.dataset = os.path.basename(os.path.dirname(self.dataPath))
+        self.sample = os.path.basename(os.path.dirname(os.path.dirname(self.dataPath)))
+        self.expPath = os.path.dirname(os.path.dirname(os.path.dirname(self.dataPath)))
+        self.savePath = os.path.join(self.expPath,'xrdct_analysis',self.sample,self.dataset)
+        saveh5.makeSaveDirs(self.savePath)
 
     def getScanGeometry(self):
         """
@@ -55,7 +57,7 @@ class Input:
         self.scans = []
         yMotor = self.yMotor()
         rotMotor = self.rotMotor()
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             scans = list(h5In.keys())
             for scan in scans:
                 if scan.split('.')[1] == scanKey[0]:
@@ -63,10 +65,17 @@ class Input:
         scansInput = sorted(scansInput)
         for scan in scansInput:
             self.scans.append('%s.%s'%(scan,scanKey[0]))
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             for scan in self.scans:
-                self.y.append(h5In['%s/measurement/%s'%(scan,yMotor)][()])
+                self.y.append(h5In['%s/instrument/positioners/%s'%(scan,yMotor)][()])
                 self.rot.append(h5In['%s/measurement/%s'%(scan,rotMotor)][()])
+        self.y = np.array(self.y)
+        self.rot = np.array(self.rot)
+        if len(np.array(self.y).shape) == 1:
+            bufferY = np.copy(self.rot)
+            for i in range(np.array(self.rot).shape[1]):
+                bufferY[:,i] = self.y
+            self.y = bufferY
         print('[INFO] Read %s scans'%max(scansInput))
 
     def yMotor(self):
@@ -74,9 +83,9 @@ class Input:
         Finds y motor from provided list.
         """
         yMotors = ['dty','diffty','diffy']
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             for motor in yMotors:
-                if motor in list(h5In['1.1/measurement'].keys()):
+                if motor in list(h5In['1.1/instrument/positioners'].keys()):
                     self.yMotor = motor
         print('[INFO] Y motor detected: %s'%self.yMotor)
         return self.yMotor
@@ -86,7 +95,7 @@ class Input:
         Finds y motor from provided list.
         """
         rotMotors = ['rot','diffrz','shrz']
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             for motor in rotMotors:
                 if motor in list(h5In['1.1/measurement'].keys()):
                     self.rotMotor = motor
@@ -98,7 +107,7 @@ class Input:
         Finds XRD detector.
         """
         xrdDetectors = ['eiger','frelon3']
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             for detector in xrdDetectors:
                 if detector in list(h5In['1.1/measurement'].keys()):
                     self.xrddetector = detector
@@ -106,14 +115,27 @@ class Input:
 
     def getXrfDetector(self):
         """
-        Finds XRF detector.
+        Finds XRF detector and channels.
         """
         xrfDetectors = ['mca_det0']
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             for detector in xrfDetectors:
                 if detector in list(h5In['1.1/measurement'].keys()):
                     self.xrfdetector = detector
                     print('[INFO] XRF detector: %s'%self.xrfdetector)
+                    self.channels = h5In['1.1/measurement'][detector][:].shape[1]
+                    print('[INFO] XRF detector channels detected: %s'%self.channels)
+
+    def getBeamMonitor(self):
+        """
+        Finds XRF detector and channels.
+        """
+        monitors = ['fpico6']
+        with h5py.File(self.dataPath,'r') as h5In:
+            for monitor in monitors:
+                if monitor in list(h5In['1.1/measurement'].keys()):
+                    self.beamMonitor = monitor
+                    print('[INFO] Beam Monitor: %s'%self.beamMonitor)
 
     def loadData(self):
         """
@@ -121,9 +143,10 @@ class Input:
         """
         self.getXrfDetector()
         self.getXrdDetector()
+        self.getBeamMonitor()
         self.getScanGeometry()
         self.dataUrls = []
-        with h5py.File(self.data,'r') as h5In:
+        with h5py.File(self.dataPath,'r') as h5In:
             for scan in self.scans:
                 self.dataUrls.append(h5In.get('%s/measurement/%s'%(scan,self.xrddetector),getlink=True).path)
         

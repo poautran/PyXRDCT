@@ -1,7 +1,7 @@
 # PyXRDCT: X-Ray Diffraction Computed Tomography reconstruction tool
 
 PyXRDCT is a X-Ray Diffraction Computed Tomography reconstruction tool.
-The library gives functions for correcting diffraction tomography sinograms based on simple mathematics such as center of mass or outliers values.
+The library gives functions for reconstructing data from ESRF Bliss h5. So far the library is tested only at ID11 beamline.
 
 ## Installation
 
@@ -16,13 +16,13 @@ Then run the following commands to install it:
 	cd PyXRDCT
 	python setup.py sdist bdist_wheel
 
-The package should be working, to test it run the core file in PyXRDCT/PyXRDCT/core/:
+The package should be working, to test it run in your python env:
 
-	python core.py -h
+	import PyXRDCT
 
 ## Dependencies and OS
 
-The library is currently tested on Python 3.6.8 over Ubuntu 18.04. Further version will be tested in the future.
+The library is currently tested on Python 3.8.10 over Ubuntu 20.04. Further version will be tested in the future.
 
 ### Requirements :
 
@@ -36,15 +36,7 @@ The library is currently tested on Python 3.6.8 over Ubuntu 18.04. Further versi
 
 ## Documentation
 
-The user manual is under construction. For an early start, main code to be run is in PyXRDCT/core. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
-
-To start you can add a shortcut on to your .bashrc file such as:
-
-	alias pyxrdct='/path/to/folder/PyXRDCT/PyXRDCT/core/core.py'
-
-Then run the following command to see all the options:
-
-	pyxrdct -h
+The user manual is under construction. For an early start, you can try to run the demo Notbook in PyXRDCT/resources. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
 
 
 

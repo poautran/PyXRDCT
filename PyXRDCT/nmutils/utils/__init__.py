@@ -15,3 +15,6 @@ from .save import saveHdf5File
 #Display functions
 from .display import createCircularMask
 from .display import progression
+
+#Slurm
+from .slurm import Slurm

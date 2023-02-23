@@ -1,1 +1,2 @@
-from nmutils import *
+from .nmutils import *
+from .core import *

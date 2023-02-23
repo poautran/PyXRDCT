@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyXRDCT",
-    version="0.2.5",
+    version="0.3.0",
     author="Pierre-Olivier Autran",
     author_email="pierre-olivier.autran@esrf.fr",
     description="This packages does provide X-Ray Diffraction Computed Tomography reconstruction functions",

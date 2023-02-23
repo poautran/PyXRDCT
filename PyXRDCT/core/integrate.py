@@ -32,24 +32,28 @@ import os, sys, time
 import json
 import fabio
 
-import readh5
-import slurm
 import multiprocessing
 
 def integrator(urls, config, data):
-    import os, fabio, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, hdf5plugin, saveh5
+    import os, fabio, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, hdf5plugin, PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
     for url in urls:
         saveIntH5Path = os.path.join(data.savePath,'h5_pyFAI_integrated',data.dataset+'_pyFAI_%s.h5'%(url.split('/')[1]))
         mask = fabio.open(config['mask_file']).data
         method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csr", impl="opencl")[0]
         resultFinal = []
+        if 'filename' in config['detector_config'].keys():
+            detector = pyFAI.detectors.NexusDetector(config['detector_config']['filename'])
+        elif 'splineFile' in config['detector_config'].keys():
+            detector = pyFAI.detectors.Detector(splineFile=config['detector_config']['splineFile'])
+        else:
+            print('[WARNING] Detector config not found!')
         ai = AI.AzimuthalIntegrator(dist=config['dist'], 
                                     poni1=config['poni1'], 
                                     poni2=config['poni2'], 
                                     rot1=config['rot1'], 
                                     rot2=config['rot2'], 
                                     rot3=config['rot3'], 
-                                    detector=pyFAI.detectors.NexusDetector(config['detector_config']['filename']), 
+                                    detector=detector, 
                                     wavelength=config['wavelength']) 
         with h5py.File(data.dataPath,'r') as h5In:
             result = np.empty((h5In[url].shape[0], config['nbpt_rad']), dtype=np.float32)

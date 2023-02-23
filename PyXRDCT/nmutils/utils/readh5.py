@@ -29,7 +29,7 @@ import numpy as np
 import h5py, hdf5plugin
 import os, sys, time
 
-import saveh5
+import PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
 
 class Input:
     """
@@ -130,7 +130,7 @@ class Input:
         """
         Finds XRF detector and channels.
         """
-        monitors = ['fpico6']
+        monitors = ['fpico6','fpico4']
         with h5py.File(self.dataPath,'r') as h5In:
             for monitor in monitors:
                 if monitor in list(h5In['1.1/measurement'].keys()):

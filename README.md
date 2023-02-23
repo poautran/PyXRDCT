@@ -14,7 +14,7 @@ The source code is available here by running the command:
 Then run the following commands to install it:
 
 	cd PyXRDCT
-	python setup.py sdist bdist_wheel
+	python3 setup.py sdist bdist_wheel
 
 The package should be working, to test it run in your python env:
 

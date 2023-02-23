@@ -39,8 +39,10 @@ import multiprocessing
 
 msk = 1 - fabio.open('/data/id11/nanoscope/Eiger/mask_20210428.edf').data  
 howmany =  10000
-pixels_in_spot = 3
+pixels_in_spot = 5
 thresholds = (4,8,16,32,64,128,256) 
+CUT = 25
+
 
 class bgsub( object ):
     def __init__(self, gain=0.5, sigmap=0.2, sigmat=15 ):
@@ -62,7 +64,7 @@ class bgsub( object ):
 
 @numba.njit
 def select( img, msk, row, col, val ):
-    cut = 5
+    cut = CUT
     # Choose the pixels that are > cut and put into sparse arrays
     k = 0
     for s in range(img.shape[0]):

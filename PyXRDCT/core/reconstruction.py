@@ -62,7 +62,7 @@ class Reconstruction:
             for i,scan in enumerate(self.data.scans): 
                 tdxrdData[i] = h5In[scan]['nnz'][:]
         tdxrdDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(tdxrdData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
-        tdxrdDataRecon = iradon(shift_sino(tdxrdDataSino.T,shift),self.data.rot[0],circle = True ,output_size = int(len(self.data.y)/binning))
+        tdxrdDataRecon = iradon(shift_sino(tdxrdDataSino.T,shift),sorted(self.data.rot[0]),circle = True ,output_size = int(len(self.data.y)/binning))
         if save:
             saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_s3dxrd_2dreconstruction.h5'),tdxrdDataRecon)
         if plot:
@@ -73,13 +73,14 @@ class Reconstruction:
             plt.subplot(122)
             plt.imshow(tdxrdDataRecon)
             plt.title('%s: Segmented grains reconstruction'%self.data.dataset)
-            
+        return tdxrdDataSino
+
     def reconstruct2d_xrdct(self, tths=[3,4], width=0.05, binning=1, shift=0, plot=False, save=True):
         """
         Reconstructs 2D slice of XRD-CT from provided array of energies.
         """
-        TTH_MIN= 0.22
-        TTH_MAX= 22
+        TTH_MIN= 0.6
+        TTH_MAX= 17
         NBPT_RAD=3000
         xrdDataReconSave = []
         for tth in tths:
@@ -90,7 +91,7 @@ class Reconstruction:
                 with h5py.File(os.path.join(self.data.savePath,'h5_pyFAI_integrated',self.data.dataset+'_pyFAI_%s.h5'%(url.split('/')[1])),'r') as h5In:
                     xrdData[i] = np.average(h5In['entry/results/data'][:,idx-idxWidth:idx+idxWidth],axis=1)
             xrdDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(xrdData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
-            xrdDataRecon = iradon(shift_sino(xrdDataSino.T,shift),self.data.rot[0],circle = True ,output_size = int(len(self.data.y)/binning))
+            xrdDataRecon = iradon(shift_sino(xrdDataSino.T,shift),sorted(self.data.rot[0]),circle = True ,output_size = int(len(self.data.y)/binning))
             if plot:
                 plt.figure(figsize=(20,10))
                 plt.subplot(121)
@@ -118,7 +119,7 @@ class Reconstruction:
                 for i,scan in enumerate(self.data.scans):
                     xrfData[i] = np.average(h5In[scan]['measurement'][self.data.xrfdetector][:,idx-idxWidth:idx+idxWidth],axis=1)
             xrfDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(xrfData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
-            xrfDataRecon = iradon(shift_sino(xrfDataSino.T,shift),self.data.rot[0],circle = True ,output_size = int(len(self.data.y)/binning))
+            xrfDataRecon = iradon(shift_sino(xrfDataSino.T,shift),sorted(self.data.rot[0]),circle = True ,output_size = int(len(self.data.y)/binning))
             if plot:
                 plt.figure(figsize=(20,10))
                 plt.subplot(121)

@@ -29,9 +29,7 @@ import numpy as np
 import h5py, hdf5plugin
 import os, sys, time
 
-import readh5
-import slurm
-import saveh5
+import PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
 
 from skimage.transform import iradon
 
@@ -82,27 +80,25 @@ class Reconstruction:
         """
         TTH_MIN= 0.22
         TTH_MAX= 22
+        NBPT_RAD=3000
         xrdDataReconSave = []
         for tth in tths:
-            idx = (np.abs(np.linspace(TTH_MIN,TTH_MAX,self.data.nbpt_rad) - tth)).argmin()
-            idxWidth = int(((self.data.channels/(TTH_MAX-TTH_MIN))*width)
+            idx = (np.abs(np.linspace(TTH_MIN,TTH_MAX,NBPT_RAD) - tth)).argmin()
+            idxWidth = int(( NBPT_RAD/(TTH_MAX-TTH_MIN))*width)
             xrdData = np.empty((len(self.data.y),len(self.data.rot[0])), dtype=np.float32)
-            #Add integrated data
-            with h5py.File(self.data.dataPath,'r') as h5In:
-                for i,scan in enumerate(self.data.scans):
-                    xrdData[i] = np.average(h5In[scan]['measurement'][self.data.xrddetector][:,idx-idxWidth:idx+idxWidth],axis=1)
-            
-                           
+            for i,url in enumerate(self.data.dataUrls):
+                with h5py.File(os.path.join(self.data.savePath,'h5_pyFAI_integrated',self.data.dataset+'_pyFAI_%s.h5'%(url.split('/')[1])),'r') as h5In:
+                    xrdData[i] = np.average(h5In['entry/results/data'][:,idx-idxWidth:idx+idxWidth],axis=1)
             xrdDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(xrdData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
             xrdDataRecon = iradon(shift_sino(xrdDataSino.T,shift),self.data.rot[0],circle = True ,output_size = int(len(self.data.y)/binning))
             if plot:
                 plt.figure(figsize=(20,10))
                 plt.subplot(121)
                 plt.imshow(xrdDataSino)
-                plt.title('%s: XRD sinogram %skeV +/-%skeV'%(self.data.dataset,energy,width))
+                plt.title('%s: XRD sinogram %s%s +/-%s%s'%(self.data.dataset,tth,chr(176),width,chr(176)))
                 plt.subplot(122)
                 plt.imshow(xrdDataRecon)
-                plt.title('%s: XRD reconstruction %skeV +/-%skeV'%(self.data.dataset,energy,width))
+                plt.title('%s: XRD reconstruction %s%s +/-%s%s'%(self.data.dataset,tth,chr(176),width,chr(176)))
             xrdDataReconSave.append(xrdDataRecon)
         xrdDataReconSave = np.array(xrdDataReconSave)
         if save:

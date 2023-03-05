@@ -34,12 +34,30 @@ import fabio
 
 import multiprocessing
 
-def integrator(urls, config, data):
-    import os, fabio, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, hdf5plugin, PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
+def integrator(urls, jsonPath, data):
+    import os, fabio, json, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, hdf5plugin, PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
+    with open(jsonPath) as jsonIn:
+        config = json.load(jsonIn)
     for url in urls:
         saveIntH5Path = os.path.join(data.savePath,'h5_pyFAI_integrated',data.dataset+'_pyFAI_%s.h5'%(url.split('/')[1]))
         mask = fabio.open(config['mask_file']).data
-        method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csr", impl="opencl")[0]
+        if config['do_dark']:
+            dark = fabio.open(config['dark_current'][0]).data
+        else:
+            dark = None
+        if config['do_flat']:
+            flat = fabio.open(config['flat_field'][0]).data
+        else:
+            flat = None
+        if config['do_radial_range']:
+            radial_range = (config['radial_range_min'], config['radial_range_max'])
+        else:
+            radial_range = None
+        if config['do_azimuthal_range']:
+            azimuth_range = (config['azimuth_range_min'], config['azimuth_range_max'])
+        else:
+            azimuth_range = None
+        method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csr", impl="opencl",target='gpu')[0]
         resultFinal = []
         if 'filename' in config['detector_config'].keys():
             detector = pyFAI.detectors.NexusDetector(config['detector_config']['filename'])
@@ -54,7 +72,7 @@ def integrator(urls, config, data):
                                     rot2=config['rot2'], 
                                     rot3=config['rot3'], 
                                     detector=detector, 
-                                    wavelength=config['wavelength']) 
+                                    wavelength=config['wavelength'])
         with h5py.File(data.dataPath,'r') as h5In:
             result = np.empty((h5In[url].shape[0], config['nbpt_rad']), dtype=np.float32)
             monitor = h5In[url.split('/')[1]]['measurement'][data.beamMonitor][:]*1e-6
@@ -63,11 +81,15 @@ def integrator(urls, config, data):
                                       config['nbpt_rad'],
                                       mask=mask,
                                       method=method,
-                                      unit=config['unit'],
-                                      polarization_factor=config['polarization_factor'],
-                                      correctSolidAngle=config['do_solid_angle']
+                                      dark=dark,
+                                      flat=flat,
+                                      radial_range = radial_range,
+                                      azimuth_range = azimuth_range,
+                                      polarization_factor = float(config['polarization_factor']),
+                                      unit = config['unit']
                                       )
                 result[image,:] = resultBuffer.intensity/monitor[image]
+            #saveBuffer = ai.integrate1d(h5In[url][0,:,:],config['nbpt_rad'],mask=mask,method=method,unit=config['unit'],polarization_factor=config['polarization_factor'],correctSolidAngle=config['do_solid_angle'])
         radial = resultBuffer.radial
         saveh5.saveIntegrateH5(saveIntH5Path,resultBuffer,'XRDCT: pyFAI integration scan %s'%(url.split('/')[1]))
         print('[INFO] %s DONE!'%saveIntH5Path)
@@ -121,11 +143,12 @@ class Integrate:
 
     def __init__(self, readH5Input, jsonFile):
         self.data = readH5Input
+        self.jsonPath = jsonFile
         with open(jsonFile) as jsonIn:
-            self.config = json.load(jsonIn)    
+            self.config = json.load(jsonIn)
 
     def wrap(self, chunk ):
-        integrator( chunk, self.config, self.data)
+        integrator( chunk, self.jsonPath, self.data)
     
     def integrate1d(self):
         chunks = [self.data.dataUrls[proc::int(multiprocessing.cpu_count()/2)] for proc in range(int(multiprocessing.cpu_count()/2))]

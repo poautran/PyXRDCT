@@ -23,4 +23,11 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: Unix",
     ),
+    install_requires=[
+        'pyFAI==2023.2.0',
+        'matplotlib',
+        'hdf5plugin',
+        'ImageD11',
+        'scikit-image'
+    ]
 )

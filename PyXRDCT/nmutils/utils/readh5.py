@@ -29,13 +29,13 @@ import numpy as np
 import h5py, hdf5plugin
 import os, sys, time
 
-import PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
+import PyXRDCT.nmutils.utils.saveh5 as saveh5
 
 class Input:
     """
     Class to input data for processing XRD/XRF/PDF-CT and 3DXRD.
     """
-    def __init__(self, dataPath):
+    def __init__(self, dataPath, session='Default'):
         """
         Initialize data path.
         """
@@ -43,7 +43,10 @@ class Input:
         self.dataset = os.path.basename(os.path.dirname(self.dataPath))
         self.sample = os.path.basename(os.path.dirname(os.path.dirname(self.dataPath)))
         self.expPath = os.path.dirname(os.path.dirname(os.path.dirname(self.dataPath)))
-        self.savePath = os.path.join(self.expPath,'xrdct_analysis',self.sample,self.dataset)
+        if session='Default':
+            self.savePath = os.path.join(self.expPath,'xrdct_analysis',self.sample,self.dataset)
+        else:
+            self.savePath = os.path.join(os.path.dirname(self.expPath),session,'xrdct_analysis',self.sample,self.dataset)
         saveh5.makeSaveDirs(self.savePath)
 
     def getScanGeometry(self):

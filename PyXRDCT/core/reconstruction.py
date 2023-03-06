@@ -29,7 +29,7 @@ import numpy as np
 import h5py, hdf5plugin
 import os, sys, time
 
-import PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
+import PyXRDCT.nmutils.utils.saveh5 as saveh5
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl

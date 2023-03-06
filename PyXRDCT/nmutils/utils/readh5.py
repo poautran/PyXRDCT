@@ -43,7 +43,7 @@ class Input:
         self.dataset = os.path.basename(os.path.dirname(self.dataPath))
         self.sample = os.path.basename(os.path.dirname(os.path.dirname(self.dataPath)))
         self.expPath = os.path.dirname(os.path.dirname(os.path.dirname(self.dataPath)))
-        if session='Default':
+        if session == 'Default':
             self.savePath = os.path.join(self.expPath,'xrdct_analysis',self.sample,self.dataset)
         else:
             self.savePath = os.path.join(os.path.dirname(self.expPath),session,'xrdct_analysis',self.sample,self.dataset)

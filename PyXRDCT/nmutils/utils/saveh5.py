@@ -44,7 +44,7 @@ def saveIntegrateH5(savePath,result,title):
     save_NXmonpd(savePath, result, title=title, entry='entry', instrument='ID11 beamline', source_name='ESRF',
                  source_type='Synchrotron', source_probe='x-ray', sample=os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(savePath)))), extra=None) 
     
-def saveReconstructedH5(savePath,result,metadata=[]):
+def saveReconstructedH5(savePath,result,metadata=[],xAxis='X'):
     """
     Saves reconstruction data with metadata as h5
     """
@@ -53,7 +53,7 @@ def saveReconstructedH5(savePath,result,metadata=[]):
         entry = h5Out.create_group("entry_0000")
         dsetResult = h5Out.create_dataset('entry_0000/data', result.shape, dtype='f')
         dsetResult[...] = result
-        dsetMetadata = h5Out.create_dataset('entry_0000/energies', [len(metadata)], dtype='f')
+        dsetMetadata = h5Out.create_dataset('entry_0000/%s'%xAxis, [len(metadata)], dtype='f')
         dsetMetadata[...] = metadata
     print('[INFO] %s saved!'%(savePath))
         

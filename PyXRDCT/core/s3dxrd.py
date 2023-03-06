@@ -156,7 +156,7 @@ def segment_scans(h5FileIn):
     """
     opts = { 'chunks' : (10000,), 'maxshape' : (None,),'compression':'lzf', 'shuffle': True }
     ndone = 0
-    outname = os.path.join(h5FileIn.savePath,h5FileIn.dataset+'_s3dxrd_segmented.h5')
+    outname = os.path.join(h5FileIn.savePath,'s3dxrd_segmented',h5FileIn.dataset+'_s3dxrd_segmented.h5')
     if not os.path.exists(os.path.dirname(outname)):
         os.makedirs(os.path.dirname(outname))
     with h5py.File( outname, "w") as hout:

@@ -36,8 +36,7 @@ import numba
 import fabio
 import concurrent.futures
 import multiprocessing
-
-msk = 1 - fabio.open('/data/id11/nanoscope/Eiger/mask_20210428.edf').data  
+ 
 howmany =  10000
 pixels_in_spot = 5
 thresholds = (4,8,16,32,64,128,256) 
@@ -183,6 +182,8 @@ def segment_scans(h5FileIn):
                 g.attrs['nframes']= frms.shape[0]
                 g.attrs['shape0'] = frms.shape[1]
                 g.attrs['shape1'] = frms.shape[2]
+                global msk
+                msk = 1 - fabio.open(h5FileIn.xrddetectorMask).data 
                 npx = 0               
                 address = scan+"/measurement/"+h5FileIn.xrddetector
                 nimg = frms.shape[0]

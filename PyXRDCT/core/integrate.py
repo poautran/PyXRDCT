@@ -35,7 +35,7 @@ import fabio
 import multiprocessing
 
 def integrator(urls, jsonPath, data):
-    import os, fabio, json, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, hdf5plugin, PyXRDCT.PyXRDCT.nmutils.utils.saveh5 as saveh5
+    import os, fabio, json, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, hdf5plugin, PyXRDCT.nmutils.utils.saveh5 as saveh5
     with open(jsonPath) as jsonIn:
         config = json.load(jsonIn)
     for url in urls:

@@ -70,7 +70,7 @@ class Reconstruction:
             recon.append(iradon( chunk[:,:,sino], sorted(self.data.rot[0]), output_size = len(self.data.y)))
         return np.array(recon)
         
-    def reconstruct2d_s3dxrd(self,  binning=1, shift=0, plot=False, save=True):
+    def reconstruct2d_s3dxrd(self,  binning=1, shift=0, plot=False, save=True, no_monitor=False):
         """
         Reconstructs 2D slice of grains from segmented s3DXRD.
         """
@@ -80,7 +80,10 @@ class Reconstruction:
             for i,scan in enumerate(self.data.scans): 
                 tdxrdData[i] = h5In[scan]['nnz'][:]
         tdxrdDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(tdxrdData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
-        tdxrdDataRecon = iradon(shift_sino(tdxrdDataSino.T,shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
+        if no_monitor:
+            tdxrdDataRecon = iradon(shift_sino(no_monitor_norm(tdxrdDataSino.T),shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
+        else:
+            tdxrdDataRecon = iradon(shift_sino(tdxrdDataSino.T,shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
         if save:
             saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_s3dxrd_2dreconstruction.h5'),tdxrdDataRecon)
         if plot:

@@ -116,6 +116,19 @@ class Input:
                     self.xrddetector = detector
                     print('[INFO] XRD detector: %s'%self.xrddetector)
 
+    def getXrdDetectorMask(self):
+        """
+        Finds XRD detector.
+        """
+        if self.xrddetector == 'eiger':
+            self.xrddetectorMask  = '/data/id11/nanoscope/Eiger/mask_20210428.edf'
+            print('[INFO] %s mask: %s'%(self.xrddetector,self.xrddetectorMask))
+        elif self.xrddetector == 'frelon3':
+            self.xrddetectorMask  = '/data/id11/3dxrd/inhouse/Frelon21/F21_mask_20221125.msk'
+            print('[INFO] %s mask: %s'%(self.xrddetector,self.xrddetectorMask))
+        else:
+            print('[WARNING] %s not supported'%self.xrddetector)
+                    
     def getXrfDetector(self):
         """
         Finds XRF detector and channels.
@@ -146,6 +159,7 @@ class Input:
         """
         self.getXrfDetector()
         self.getXrdDetector()
+        self.getXrdDetectorMask()
         self.getBeamMonitor()
         self.getScanGeometry()
         self.dataUrls = []

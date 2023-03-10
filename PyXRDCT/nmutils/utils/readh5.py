@@ -42,12 +42,15 @@ class Input:
         self.dataPath = dataPath
         self.dataset = os.path.basename(os.path.dirname(self.dataPath))
         self.sample = os.path.basename(os.path.dirname(os.path.dirname(self.dataPath)))
-        self.expPath = os.path.dirname(os.path.dirname(os.path.dirname(self.dataPath)))
+        self.expPath = os.path.join('/',*dataPath.split('/')[:5])
         if session == 'Default':
-            self.savePath = os.path.join(self.expPath,'xrdct_analysis',self.sample,self.dataset)
+            self.session = os.path.join(*dataPath.split('/')[5:6])
+            self.savePath = os.path.join(self.expPath,self.session,'processed/xrdct_analysis',self.sample,self.dataset)
         else:
-            self.savePath = os.path.join(os.path.dirname(self.expPath),session,'xrdct_analysis',self.sample,self.dataset)
+            self.session = session
+            self.savePath = os.path.join(self.expPath,self.session,'xrdct_analysis',self.sample,self.dataset)
         saveh5.makeSaveDirs(self.savePath)
+        print('[INFO] Data will be saved in %s!'%self.savePath)
 
     def getScanGeometry(self):
         """
@@ -61,9 +64,10 @@ class Input:
         yMotor = self.yMotor()
         rotMotor = self.rotMotor()
         with h5py.File(self.dataPath,'r') as h5In:
-            scans = list(h5In.keys())
+            scans = np.array(list(h5In.keys()))
+            scanCheckTitle = h5In[scans[0]]['title'][()].decode("utf-8").split(' ')
             for scan in scans:
-                if scan.split('.')[1] == scanKey[0]:
+                if scan.split('.')[1] == scanKey[0] and (h5In[scan]['title'][()].decode("utf-8").split(' ')[0:2] == scanCheckTitle[0:2]):
                     scansInput.append(int(scan.split('.')[0]))
         scansInput = sorted(scansInput)
         for scan in scansInput:

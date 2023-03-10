@@ -36,11 +36,11 @@ import numba
 import fabio
 import concurrent.futures
 import multiprocessing
- 
+
 howmany =  10000
 pixels_in_spot = 5
 thresholds = (4,8,16,32,64,128,256) 
-CUT = 25
+CUT = 5
 
 
 class bgsub( object ):

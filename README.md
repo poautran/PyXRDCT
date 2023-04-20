@@ -1,6 +1,6 @@
 # PyXRDCT: X-Ray Diffraction Computed Tomography reconstruction tool
 
-PyXRDCT is a X-Ray Diffraction Computed Tomography reconstruction tool.
+PyXRDCT is an X-Ray Diffraction Computed Tomography reconstruction tool.
 The library gives functions for reconstructing data from ESRF Bliss h5. So far the library is tested only at ID11 beamline.
 
 ## Installation
@@ -36,7 +36,7 @@ The library is currently tested on Python 3.8.10 over Ubuntu 20.04. Further vers
 
 ## Documentation
 
-The user manual is under construction. For an early start, you can try to run the demo Notbook in PyXRDCT/resources. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
+The user manual is under construction. For an early start, you can try to run the demo Notebook in PyXRDCT/resources. Functions and other utilities are in PyXRDCT/nmutils/utils. Examples of raw data are located in the resources folder in PyXRDCT/resources.
 
 
 

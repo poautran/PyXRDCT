@@ -19,147 +19,185 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import os
+
+import h5py
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
-import h5py, hdf5plugin
-import os, sys, time
 
 import PyXRDCT.nmutils.utils.saveh5 as saveh5
 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 mpl.rc('image', cmap='gray')
 
-def shift_sino(s,s_shift):
+
+def shift_sino(s, s_shift):
     from scipy.ndimage import shift
     sOut = np.zeros(np.shape(s))
-    for i in range(0,np.size(s,1)):
-        shift(s[:,i],-s_shift,sOut[:,i],mode='nearest')
+    for i in range(0, np.size(s, 1)):
+        shift(s[:, i], -s_shift, sOut[:, i], mode='nearest')
     return sOut
 
+
 def no_monitor_norm(s):
-    if len(s.shape)==3:
-        avgs = np.average(s,axis=2)
+    if len(s.shape) == 3:
+        avgs = np.average(s, axis=2)
         for j in range(s.shape[2]):
             for i in range(s.shape[0]):
-                s[i,:,j] = s[i,:,j]/np.average(avgs[i,:])
+                s[i, :, j] = s[i, :, j] / np.average(avgs[i, :])
     else:
         avgs = np.copy(s)
         for i in range(s.shape[0]):
-            s[i,:] = s[i,:]/np.average(avgs[i,:])
-    return(s)
+            s[i, :] = s[i, :] / np.average(avgs[i, :])
+    return (s)
+
 
 class Reconstruction:
     """
     Initialise reconstruction class
     """
+
     def __init__(self, readH5Input, intFile=False):
         self.data = readH5Input
         if intFile:
             self.integrate = intFile
-    
+
     def parallel_iradon(self, chunk):
         from skimage.transform import iradon
         recon = []
         for sino in range(chunk.shape[2]):
-            recon.append(iradon( chunk[:,:,sino], sorted(self.data.rot[0]), output_size = len(self.data.y)))
+            recon.append(iradon(chunk[:, :, sino], sorted(self.data.rot[0]), output_size=len(self.data.y)))
         return np.array(recon)
-        
-    def reconstruct2d_s3dxrd(self,  binning=1, shift=0, plot=False, save=True, no_monitor=False):
+
+    def parallel_histogram(self, chunk):
+        import numpy as np
+        sinoFinal = []
+        for data in range(chunk.shape[2]):
+            sino, a, y = np.histogram2d(np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),
+                                        weights=np.array(chunk[:, :, data]).ravel(),
+                                        bins=(self.data.rot.shape[1], self.data.rot.shape[0]))
+            sinoFinal.append(sino)
+        return np.array(sinoFinal)
+
+    def reconstruct2d_s3dxrd(self, binning=1, shift=0, plot=False, save=True, no_monitor=False):
         """
         Reconstructs 2D slice of grains from segmented s3DXRD.
         """
         from skimage.transform import iradon
-        tdxrdData = np.empty((len(self.data.y),len(self.data.rot[0])), dtype=np.float32)
-        with h5py.File(os.path.join(self.data.savePath,'s3dxrd_segmented',self.data.dataset+'_s3dxrd_segmented.h5'),'r') as h5In:
-            for i,scan in enumerate(self.data.scans): 
+        tdxrdData = np.empty((len(self.data.y), len(self.data.rot[0])), dtype=np.float32)
+        with h5py.File(os.path.join(self.data.savePath, 's3dxrd_segmented', self.data.dataset + '_s3dxrd_segmented.h5'),
+                       'r') as h5In:
+            for i, scan in enumerate(self.data.scans):
                 tdxrdData[i] = h5In[scan]['nnz'][:]
-        tdxrdDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(tdxrdData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
+        tdxrdDataSino, a, y = np.histogram2d(np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),
+                                             weights=np.array(tdxrdData).ravel(), bins=(
+            int(self.data.rot.shape[1] / binning), int(self.data.rot.shape[0] / binning)))
         if no_monitor:
-            tdxrdDataRecon = iradon(shift_sino(no_monitor_norm(tdxrdDataSino.T),shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
+            tdxrdDataRecon = iradon(shift_sino(no_monitor_norm(tdxrdDataSino.T), shift),
+                                    sorted(self.data.rot[0][::binning]), circle=True,
+                                    output_size=int(len(self.data.y) / binning))
         else:
-            tdxrdDataRecon = iradon(shift_sino(tdxrdDataSino.T,shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
+            tdxrdDataRecon = iradon(shift_sino(tdxrdDataSino.T, shift), sorted(self.data.rot[0][::binning]),
+                                    circle=True, output_size=int(len(self.data.y) / binning))
         if save:
-            saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_s3dxrd_2dreconstruction.h5'),tdxrdDataRecon)
+            saveh5.saveReconstructedH5(
+                os.path.join(self.data.savePath, self.data.dataset + '_s3dxrd_2dreconstruction.h5'), tdxrdDataRecon)
         if plot:
-            plt.figure(figsize=(20,10))
+            plt.figure(figsize=(20, 10))
             plt.subplot(121)
             plt.imshow(tdxrdDataSino)
-            plt.title('%s: Segmented grains sinogram'%self.data.dataset)
+            plt.title('%s: Segmented grains sinogram' % self.data.dataset)
             plt.subplot(122)
             plt.imshow(tdxrdDataRecon)
-            plt.title('%s: Segmented grains reconstruction'%self.data.dataset)
+            plt.title('%s: Segmented grains reconstruction' % self.data.dataset)
             plt.show()
 
-    def reconstruct2d_xrdct(self, tths=[3,4], width=0.05, binning=1, shift=0, plot=False, save=True, no_monitor=False):
+    def reconstruct2d_xrdct(self, tths=[3, 4], width=0.05, binning=1, shift=0, plot=False, save=True, no_monitor=False):
         """
         Reconstructs 2D slice of XRD-CT from provided array of energies.
         """
-        with h5py.File(os.path.join(self.data.savePath,'h5_pyFAI_integrated',self.data.dataset+'_pyFAI_1.1.h5'),'r') as h5In:
+        with h5py.File(os.path.join(self.data.savePath, 'h5_pyFAI_integrated', self.data.dataset + '_pyFAI_1.1.h5'),
+                       'r') as h5In:
             tthMin = min(h5In['entry/results/polar_angle'][:])
             tthMax = max(h5In['entry/results/polar_angle'][:])
             nbptRad = len(h5In['entry/results/polar_angle'][:])
         xrdDataReconSave = []
         from skimage.transform import iradon
         for tth in tths:
-            idx = (np.abs(np.linspace(tthMin,tthMax,nbptRad) - tth)).argmin()
-            idxWidth = int(( nbptRad/(tthMax-tthMin))*width)
-            xrdData = np.empty((len(self.data.y),len(self.data.rot[0])), dtype=np.float32)
-            for i,url in enumerate(self.data.dataUrls):
-                with h5py.File(os.path.join(self.data.savePath,'h5_pyFAI_integrated',self.data.dataset+'_pyFAI_%s.h5'%(url.split('/')[1])),'r') as h5In:
-                    xrdData[i] = np.average(h5In['entry/results/data'][:,idx-idxWidth:idx+idxWidth],axis=1)
-            xrdDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(xrdData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
+            idx = (np.abs(np.linspace(tthMin, tthMax, nbptRad) - tth)).argmin()
+            idxWidth = int((nbptRad / (tthMax - tthMin)) * width)
+            xrdData = np.empty((len(self.data.y), len(self.data.rot[0])), dtype=np.float32)
+            for i, url in enumerate(self.data.dataUrls):
+                with h5py.File(os.path.join(self.data.savePath, 'h5_pyFAI_integrated',
+                                            self.data.dataset + '_pyFAI_%s.h5' % (url.split('/')[1])), 'r') as h5In:
+                    xrdData[i] = np.average(h5In['entry/results/data'][:, idx - idxWidth:idx + idxWidth], axis=1)
+            xrdDataSino, a, y = np.histogram2d(np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),
+                                               weights=np.array(xrdData).ravel(), bins=(
+                int(self.data.rot.shape[1] / binning), int(self.data.rot.shape[0] / binning)))
             if no_monitor:
-                xrdDataRecon = iradon(shift_sino(no_monitor_norm(xrdDataSino.T),shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
+                xrdDataRecon = iradon(shift_sino(no_monitor_norm(xrdDataSino.T), shift),
+                                      sorted(self.data.rot[0][::binning]), circle=True,
+                                      output_size=int(len(self.data.y) / binning))
             else:
-                xrdDataRecon = iradon(shift_sino(xrdDataSino.T,shift),sorted(self.data.rot[0]),circle = True ,output_size = int(len(self.data.y)/binning))
+                xrdDataRecon = iradon(shift_sino(xrdDataSino.T, shift), sorted(self.data.rot[0]), circle=True,
+                                      output_size=int(len(self.data.y) / binning))
             if plot:
-                plt.figure(figsize=(20,10))
+                plt.figure(figsize=(20, 10))
                 plt.subplot(121)
                 plt.imshow(xrdDataSino)
-                plt.title('%s: XRD sinogram %s%s +/-%s%s'%(self.data.dataset,tth,chr(176),width,chr(176)))
+                plt.title('%s: XRD sinogram %s%s +/-%s%s' % (self.data.dataset, tth, chr(176), width, chr(176)))
                 plt.subplot(122)
                 plt.imshow(xrdDataRecon)
-                plt.title('%s: XRD reconstruction %s%s +/-%s%s'%(self.data.dataset,tth,chr(176),width,chr(176)))
+                plt.title('%s: XRD reconstruction %s%s +/-%s%s' % (self.data.dataset, tth, chr(176), width, chr(176)))
                 plt.show()
             xrdDataReconSave.append(xrdDataRecon)
         xrdDataReconSave = np.array(xrdDataReconSave)
         if save:
-            saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_xrd_2dreconstruction.h5'),xrdDataReconSave,tths,xAxis='tth')
-            
-    def reconstruct3d_xrdct(self, algorithm='fbp',binning=1, shift=0, save=True, no_monitor=False):
+            saveh5.saveReconstructedH5(os.path.join(self.data.savePath, self.data.dataset + '_xrd_2dreconstruction.h5'),
+                                       xrdDataReconSave, tths, xAxis='tth')
+
+    def reconstruct3d_xrdct(self, algorithm='fbp', binning=1, shift=0, save=True, no_monitor=False):
         """
         Reconstructs 3D dataset of XRD-CT from provided array of energies.
         """
         import multiprocessing
-        with h5py.File(os.path.join(self.data.savePath,'h5_pyFAI_integrated',self.data.dataset+'_pyFAI_1.1.h5'),'r') as h5In:
+        with h5py.File(os.path.join(self.data.savePath, 'h5_pyFAI_integrated', self.data.dataset + '_pyFAI_1.1.h5'),
+                       'r') as h5In:
             tth = h5In['entry/results/polar_angle'][:]
-        xrdData = np.empty((len(self.data.y),len(self.data.rot[0]),len(tth)), dtype=np.float32)
-        for i,url in enumerate(self.data.dataUrls):
-            with h5py.File(os.path.join(self.data.savePath,'h5_pyFAI_integrated',self.data.dataset+'_pyFAI_%s.h5'%(url.split('/')[1])),'r') as h5In:
-                xrdData[i,:,:] = h5In['entry/results/data'][:]
-        xrdDataSino = np.zeros((int(self.data.rot.shape[0]/binning),int(self.data.rot.shape[1]/binning),xrdData.shape[2]))
+        xrdData = np.empty((len(self.data.y), len(self.data.rot[0]), len(tth)), dtype=np.float32)
+        for i, url in enumerate(self.data.dataUrls):
+            with h5py.File(os.path.join(self.data.savePath, 'h5_pyFAI_integrated',
+                                        self.data.dataset + '_pyFAI_%s.h5' % (url.split('/')[1])), 'r') as h5In:
+                xrdData[i, :, :] = h5In['entry/results/data'][:]
+        xrdDataSino = np.zeros(
+            (int(self.data.rot.shape[0] / binning), int(self.data.rot.shape[1] / binning), xrdData.shape[2]))
         for tthVal in range(xrdData.shape[2]):
-            xrdDataSinoBuffer, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(xrdData[:,:,tthVal]).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
-            xrdDataSino[:,:,tthVal] = shift_sino(xrdDataSinoBuffer.T,shift)
-        chunks = [xrdDataSino[:,:,proc*100:(proc*100)+100] for proc in range(int(xrdData.shape[2]/100))]
+            xrdDataSinoBuffer, a, y = np.histogram2d(np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),
+                                                     weights=np.array(xrdData[:, :, tthVal]).ravel(), bins=(
+                int(self.data.rot.shape[1] / binning), int(self.data.rot.shape[0] / binning)))
+            xrdDataSino[:, :, tthVal] = shift_sino(xrdDataSinoBuffer.T, shift)
+        chunks = [xrdDataSino[:, :, proc * 100:(proc * 100) + 100] for proc in range(int(xrdData.shape[2] / 100))]
         xrdDataReconSave = []
         if no_monitor:
             xrdDataSino = no_monitor_norm(xrdDataSino)
-        with multiprocessing.Pool(int(multiprocessing.cpu_count()/2)) as pool:
-            for result in pool.map( self.parallel_iradon,  chunks):
+        with multiprocessing.Pool(int(multiprocessing.cpu_count() / 2)) as pool:
+            for result in pool.map(self.parallel_iradon, chunks):
                 xrdDataReconSave.extend(result)
         xrdDataReconSave = np.array(xrdDataReconSave)
         if save:
-            saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_xrd_3dreconstruction.h5'),xrdDataReconSave,tth,xAxis='tth')
-            saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_xrd_3dsinogram.h5'),xrdDataSino,tth,xAxis='tth')
-        
-    def reconstruct2d_xrfct(self, energies=[2.013,28.612,49.127,61.140,0.5249,0.0543,4.952,28.612,49.127], binning=1, width=0.05, shift=0, plot=False, save=True, no_monitor=False):
+            saveh5.saveReconstructedH5(os.path.join(self.data.savePath, self.data.dataset + '_xrd_3dreconstruction.h5'),
+                                       xrdDataReconSave, tth, xAxis='tth')
+            saveh5.saveReconstructedH5(os.path.join(self.data.savePath, self.data.dataset + '_xrd_3dsinogram.h5'),
+                                       xrdDataSino, tth, xAxis='tth')
+
+    def reconstruct2d_xrfct(self, energies=[2.013, 28.612, 49.127, 61.140, 0.5249, 0.0543, 4.952, 28.612, 49.127],
+                            binning=1, width=0.05, shift=0, plot=False, save=True, no_monitor=False):
         """
         Reconstructs 2D slice of XRF-CT from provided array of energies.
         """
@@ -167,28 +205,69 @@ class Reconstruction:
         ENERGY_MAX = 81.92
         xrfDataReconSave = []
         for energy in energies:
-            idx = (np.abs(np.linspace(0,ENERGY_MAX,self.data.channels) - energy)).argmin()
-            idxWidth = int((self.data.channels/ENERGY_MAX)*width)
-            xrfData = np.empty((len(self.data.y),len(self.data.rot[0])), dtype=np.float32)
-            with h5py.File(self.data.dataPath,'r') as h5In:
-                for i,scan in enumerate(self.data.scans):
-                    xrfData[i] = np.average(h5In[scan]['measurement'][self.data.xrfdetector][:,idx-idxWidth:idx+idxWidth],axis=1)/h5In[scan]['measurement'][self.data.beamMonitor][:]
-            xrfDataSino, a,y = np.histogram2d( np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),weights = np.array(xrfData).ravel(), bins=(int(self.data.rot.shape[1]/binning),int(self.data.rot.shape[0]/binning)) )
+            idx = (np.abs(np.linspace(0, ENERGY_MAX, self.data.channels) - energy)).argmin()
+            idxWidth = int((self.data.channels / ENERGY_MAX) * width)
+            xrfData = np.empty((len(self.data.y), len(self.data.rot[0])), dtype=np.float32)
+            with h5py.File(self.data.dataPath, 'r') as h5In:
+                for i, scan in enumerate(self.data.scans):
+                    xrfData[i] = np.average(
+                        h5In[scan]['measurement'][self.data.xrfdetector][:, idx - idxWidth:idx + idxWidth], axis=1) / \
+                                 h5In[scan]['measurement'][self.data.beamMonitor][:]
+            xrfDataSino, a, y = np.histogram2d(np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),
+                                               weights=np.array(xrfData).ravel(), bins=(
+                int(self.data.rot.shape[1] / binning), int(self.data.rot.shape[0] / binning)))
             if no_monitor:
-                xrfDataRecon = iradon(shift_sino(no_monitor_norm(xrfDataSino.T),shift),sorted(self.data.rot[0][::binning]),circle = True ,output_size = int(len(self.data.y)/binning))
+                xrfDataRecon = iradon(shift_sino(no_monitor_norm(xrfDataSino.T), shift),
+                                      sorted(self.data.rot[0][::binning]), circle=True,
+                                      output_size=int(len(self.data.y) / binning))
             else:
-                xrfDataRecon = iradon(shift_sino(xrfDataSino.T,shift),sorted(self.data.rot[0]),circle = True ,output_size = int(len(self.data.y)/binning))
+                xrfDataRecon = iradon(shift_sino(xrfDataSino.T, shift), sorted(self.data.rot[0]), circle=True,
+                                      output_size=int(len(self.data.y) / binning))
             if plot:
-                plt.figure(figsize=(20,10))
+                plt.figure(figsize=(20, 10))
                 plt.subplot(121)
                 plt.imshow(xrfDataSino)
-                plt.title('%s: XRF sinogram %skeV +/-%skeV'%(self.data.dataset,energy,width))
+                plt.title('%s: XRF sinogram %skeV +/-%skeV' % (self.data.dataset, energy, width))
                 plt.subplot(122)
                 plt.imshow(xrfDataRecon)
-                plt.title('%s: XRF reconstruction %skeV +/-%skeV'%(self.data.dataset,energy,width))
+                plt.title('%s: XRF reconstruction %skeV +/-%skeV' % (self.data.dataset, energy, width))
                 plt.show()
             xrfDataReconSave.append(xrfDataRecon)
         xrfDataReconSave = np.array(xrfDataReconSave)
         if save:
-            saveh5.saveReconstructedH5(os.path.join(self.data.savePath,self.data.dataset+'_xrf_2dreconstruction.h5'),xrfDataReconSave,energies,xAxis='Energy')
-            
+            saveh5.saveReconstructedH5(os.path.join(self.data.savePath, self.data.dataset + '_xrf_2dreconstruction.h5'),
+                                       xrfDataReconSave, energies, xAxis='Energy')
+
+    def reconstruct3d_xrfct(self, algorithm='fbp', binning=1, shift=0, save=True, no_monitor=False):
+        """
+        Reconstructs 3D dataset of XRF-CT from provided array of energies.
+        """
+        import multiprocessing
+        ENERGY_MAX = 81.92
+        energies = np.linspace(0, ENERGY_MAX, self.data.channels)
+        xrfData = np.empty((len(self.data.y), len(self.data.rot[0]), len(energies)), dtype=np.float32)
+        with h5py.File(self.data.dataPath, 'r') as h5In:
+            for i, scan in enumerate(self.data.scans):
+                xrfData[i] = h5In[scan]['measurement'][self.data.xrfdetector][:] / h5In[scan]['measurement'][
+                                                                                       self.data.beamMonitor][:][:,
+                                                                                   None]
+        dataChunks = [xrfData[:, :, proc * 100:(proc * 100) + 100] for proc in range(int(xrfData.shape[2] / 100))]
+        xrfDataSino = []
+        with multiprocessing.Pool(int(multiprocessing.cpu_count() / 2)) as pool:
+            for result in pool.map(self.parallel_histogram, dataChunks):
+                xrfDataSino.extend(result)
+        for energyVal in range(xrfData.shape[2]):
+            xrfDataSino[:, :, energyVal] = shift_sino(xrfDataSino.T, shift)
+        sinoChunks = [xrfDataSino[:, :, proc * 100:(proc * 100) + 100] for proc in range(int(xrfData.shape[2] / 100))]
+        xrfDataReconSave = []
+        if no_monitor:
+            xrfDataSino = no_monitor_norm(xrfDataSino)
+        with multiprocessing.Pool(int(multiprocessing.cpu_count() / 2)) as pool:
+            for result in pool.map(self.parallel_iradon, sinoChunks):
+                xrfDataReconSave.extend(result)
+        xrfDataReconSave = np.array(xrfDataReconSave)
+        if save:
+            saveh5.saveReconstructedH5(os.path.join(self.data.savePath, self.data.dataset + '_xrf_3dreconstruction.h5'),
+                                       xrfDataReconSave, energies, xAxis='energy')
+            saveh5.saveReconstructedH5(os.path.join(self.data.savePath, self.data.dataset + '_xrf_3dsinogram.h5'),
+                                       xrfDataSino, energies, xAxis='energy')

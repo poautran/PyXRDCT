@@ -39,6 +39,10 @@ def integrator(urls, jsonPath, data):
     for url in urls:
         saveIntH5Path = os.path.join(data.savePath, 'h5_pyFAI_integrated',
                                      data.dataset + '_pyFAI_%s.h5' % (url.split('/')[1]))
+        checkDoneIntegration = os.path.exists(saveIntH5Path)
+        if checkDoneIntegration:
+            print('%s Already processed!'%url)
+            continue
         mask = fabio.open(config['mask_file']).data
         if config['do_dark']:
             dark = fabio.open(config['dark_current'][0]).data
@@ -56,8 +60,8 @@ def integrator(urls, jsonPath, data):
             azimuth_range = (config['azimuth_range_min'], config['azimuth_range_max'])
         else:
             azimuth_range = None
-        method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csr", impl="opencl",
-                                                                       target='gpu')[0]
+        method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csr", impl="cython",
+                                                                       target='cpu')[0]
         if 'filename' in config['detector_config'].keys():
             detector = pyFAI.detectors.NexusDetector(config['detector_config']['filename'])
         elif 'splineFile' in config['detector_config'].keys():
@@ -110,10 +114,10 @@ class Integrate:
         integrator(chunk, self.jsonPath, self.data)
 
     def integrate1d(self):
-        chunks = [self.data.dataUrls[proc::int(multiprocessing.cpu_count() / 2)] for proc in
-                  range(int(multiprocessing.cpu_count() / 2))]
+        chunks = [self.data.dataUrls[proc::int(multiprocessing.cpu_count())] for proc in
+                  range(int(multiprocessing.cpu_count()))]
         start_time = time.time()
-        with multiprocessing.Pool(int(multiprocessing.cpu_count() / 2)) as pool:
+        with multiprocessing.Pool(int(multiprocessing.cpu_count())) as pool:
             for _ in pool.imap_unordered(self.wrap, chunks):
                 pass
         print('[INFO] Took: %4dsec, %4dFPS' % (

@@ -43,9 +43,7 @@ class Input:
         Initialize data path.
         """
         self.beamMonitor = None
-        self.yMotor = None
-        self.rotMotor = None
-        self.dataUrls = None
+        self.dataUrls = []
         self.scans = []
         self.y = []
         self.rot = []
@@ -65,10 +63,12 @@ class Input:
 
     def getScanGeometry(self):
         """
-        Reads scan Geometry from h5 file.
+        Reads scan Geometry from ESRF Bliss h5 file.
         """
         scanKey = ['1']
         scansInput = []
+        yMotor = self.yMotor()
+        rotMotor = self.rotMotor()
         with h5py.File(self.dataPath, 'r') as h5In:
             scans = np.array(list(h5In.keys()))
             scanCheckTitle = h5In[scans[0]]['title'][()].decode("utf-8").split(' ')
@@ -81,8 +81,8 @@ class Input:
             self.scans.append('%s.%s' % (scan, scanKey[0]))
         with h5py.File(self.dataPath, 'r') as h5In:
             for scan in self.scans:
-                self.y.append(h5In['%s/instrument/positioners/%s' % (scan, self.yMotor)][()])
-                self.rot.append(h5In['%s/measurement/%s' % (scan, self.rotMotor)][()])
+                self.y.append(h5In['%s/instrument/positioners/%s' % (scan, yMotor)][()])
+                self.rot.append(h5In['%s/measurement/%s' % (scan, rotMotor)][()])
         self.y = np.array(self.y)
         self.rot = np.array(self.rot)
         if len(np.array(self.y).shape) == 1:

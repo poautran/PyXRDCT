@@ -147,6 +147,10 @@ class Reconstruction:
             else:
                 xrdDataRecon = iradon(shift_sino(xrdDataSino.T, shift), sorted(self.data.rot[0]), circle=True,
                                       output_size=int(len(self.data.y) / binning))
+            radius=(int(len(self.data.y) / binning)*0.9)/2
+            xpr, ypr = np.mgrid[:int(len(self.data.y) / binning), :int(len(self.data.y) / binning)] - int(len(self.data.y) / binning)/2
+            xrdDataReconCircle = (xpr ** 2 + ypr ** 2) > radius ** 2
+            xrdDataRecon[xrdDataReconCircle] = np.average(xrdDataRecon)
             if plot:
                 plt.figure(figsize=(20, 10))
                 plt.subplot(121)

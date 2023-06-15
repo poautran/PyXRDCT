@@ -24,7 +24,7 @@ setuptools.setup(
         "Operating System :: Unix",
     ),
     install_requires=[
-        'pyFAI==2023.2.0',
+        'pyFAI==2023.5.0',
         'matplotlib',
         'hdf5plugin',
         'ImageD11',

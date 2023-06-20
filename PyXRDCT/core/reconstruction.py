@@ -132,11 +132,14 @@ class Reconstruction:
         for tth in tths:
             idx = (np.abs(np.linspace(tthMin, tthMax, nbptRad) - tth)).argmin()
             idxWidth = int((nbptRad / (tthMax - tthMin)) * width)
+            xrdDataAvg = []
             xrdData = np.empty((len(self.data.y), len(self.data.rot[0])), dtype=np.float32)
             for i, url in enumerate(self.data.dataUrls):
                 with h5py.File(os.path.join(self.data.savePath, 'h5_pyFAI_integrated',
                                             self.data.dataset + '_pyFAI_%s.h5' % (url.split('/')[1])), 'r') as h5In:
                     xrdData[i] = np.average(h5In['entry/results/data'][:, idx - idxWidth:idx + idxWidth], axis=1)
+                    xrdDataAvg.append(np.average(h5In['entry/results/data'],axis=0))
+            xrdDataAvg = np.average(np.array(xrdDataAvg),axis=0)
             xrdDataSino, a, y = np.histogram2d(np.array(self.data.rot).ravel(), np.array(self.data.y).ravel(),
                                                weights=np.array(xrdData).ravel(), bins=(
                 int(self.data.rot.shape[1] / binning), int(self.data.rot.shape[0] / binning)))
@@ -152,14 +155,25 @@ class Reconstruction:
             xrdDataReconCircle = (xpr ** 2 + ypr ** 2) > radius ** 2
             xrdDataRecon[xrdDataReconCircle] = np.average(xrdDataRecon)
             if plot:
-                plt.figure(figsize=(20, 10))
-                plt.subplot(121)
-                plt.imshow(xrdDataSino)
-                plt.title('%s: XRD sinogram %s%s +/-%s%s' % (self.data.dataset, tth, chr(176), width, chr(176)))
-                plt.subplot(122)
-                plt.imshow(xrdDataRecon)
-                plt.title('%s: XRD reconstruction %s%s +/-%s%s' % (self.data.dataset, tth, chr(176), width, chr(176)))
+                plt.figure(figsize=(plot, plot*0.66))
+                ax1 = plt.subplot(221)
+                ax1.imshow(xrdDataSino, aspect='auto')
+                ax1.set_title('%s: XRD sinogram %s%s +/-%s%s' % (self.data.dataset, tth, chr(176), width, chr(176)))
+                ax2 = plt.subplot(222)
+                ax2.imshow(xrdDataRecon,vmin=1.2*np.min(xrdDataRecon),vmax=0.8*np.max(xrdDataRecon))
+                ax2.set_title('%s: XRD reconstruction %s%s +/-%s%s' % (self.data.dataset, tth, chr(176), width, chr(176)))
+                ax3 = plt.subplot(212)
+                ax3.plot(np.linspace(tthMin, tthMax, nbptRad),np.log(xrdDataAvg),'k')
+                ax3.set_xlabel('tth (%s)'%chr(176))
+                ax3.set_ylabel('log(I) (A.U.)')
+                ax3.axvline(x = tth-width, color = 'r')
+                ax3.axvline(x = tth+width, color = 'r')
+                ax3.set_title('%s: XRD pattern (average)'% (self.data.dataset))
                 plt.show()
+            with open(os.path.join(self.data.savePath, self.data.dataset + '_xrd_sum.xy'), "w" ) as f:
+                f.write("#  tth(deg)  intensity\n")
+                for twoth,intens in zip(np.linspace(tthMin, tthMax, nbptRad),xrdDataAvg):
+                    f.write("%g %g\n"%(twoth,intens))
             xrdDataReconSave.append(xrdDataRecon)
         xrdDataReconSave = np.array(xrdDataReconSave)
         if save:

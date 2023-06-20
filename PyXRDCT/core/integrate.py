@@ -32,7 +32,7 @@ import time
 
 def integrator(urls, jsonPath, data):
     global detector
-    import os, fabio, json, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, h5py, \
+    import os, fabio, json, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, time, hdf5plugin, h5py, \
         PyXRDCT.nmutils.utils.saveh5 as saveh5
     with open(jsonPath) as jsonIn:
         config = json.load(jsonIn)
@@ -79,19 +79,23 @@ def integrator(urls, jsonPath, data):
         with h5py.File(data.dataPath, 'r') as h5In:
             result = np.empty((h5In[url].shape[0], config['nbpt_rad']), dtype=np.float32)
             monitor = h5In[url.split('/')[1]]['measurement'][data.beamMonitor][:] * 1e-6
-            for image in range(h5In[url].shape[0]):
-                resultBuffer = ai.integrate1d_ng(h5In[url][image, :, :],
-                                                 config['nbpt_rad'],
-                                                 mask=mask,
-                                                 method=method,
-                                                 dark=dark,
-                                                 flat=flat,
-                                                 radial_range=radial_range,
-                                                 azimuth_range=azimuth_range,
-                                                 polarization_factor=float(config['polarization_factor']),
-                                                 unit=config['unit']
-                                                 )
-                result[image, :] = resultBuffer.intensity / monitor[image]
+        with h5py.File(os.path.join(os.path.dirname(data.dataPath),'scan%04d/%s_0000.h5'%(int(url.split('/')[1].split('.')[0]),data.xrddetector)), 'r') as h5In:
+            a = time.time()
+            frames = h5In['entry_0000/measurement/data'][:].astype('float32')
+            print('Scan %s took %ssec to load'%(int(url.split('/')[1].split('.')[0]),time.time()-a))
+        for image in range(frames.shape[0]):
+            resultBuffer = ai.integrate1d_ng(frames[image, :, :],
+                                             config['nbpt_rad'],
+                                             mask=mask,
+                                             method=method,
+                                             dark=dark,
+                                             flat=flat,
+                                             radial_range=radial_range,
+                                             azimuth_range=azimuth_range,
+                                             polarization_factor=float(config['polarization_factor']),
+                                             unit=config['unit']
+                                             )
+            result[image, :] = resultBuffer.intensity / monitor[image]
         saveh5.saveIntegrateH5(saveIntH5Path, resultBuffer, 'XRDCT: pyFAI integration scan %s' % (url.split('/')[1]))
         print('[INFO] %s DONE!' % saveIntH5Path)
         with h5py.File(saveIntH5Path, 'r+') as h5In:

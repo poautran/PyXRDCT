@@ -29,79 +29,85 @@ import json
 import multiprocessing
 import time
 
+nbprocs = int(multiprocessing.cpu_count())
+try:
+    nbprocs = int(os.environ['SLURM_CPUS_ON_NODE'])
 
 def integrator(urls, jsonPath, data):
     global detector
-    import os, fabio, json, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, time, hdf5plugin, h5py, \
+    import os, fabio, json, multiprocessing, pyFAI, pyFAI.azimuthalIntegrator as AI, numpy as np, time, hdf5plugin, h5py, \
         PyXRDCT.nmutils.utils.saveh5 as saveh5
+    os.environ["OMP_NUM_THREADS"] = "1"
     with open(jsonPath) as jsonIn:
         config = json.load(jsonIn)
+    startTime = time.time()
+    mask = fabio.open(config['mask_file']).data
+    if config['do_dark']:
+        dark = fabio.open(config['dark_current'][0]).data
+    else:
+        dark = None
+    if config['do_flat']:
+        flat = fabio.open(config['flat_field'][0]).data
+    else:
+        flat = None
+    if config['do_radial_range']:
+        radial_range = (config['radial_range_min'], config['radial_range_max'])
+    else:
+        radial_range = None
+    if config['do_azimuthal_range']:
+        azimuth_range = (config['azimuth_range_min'], config['azimuth_range_max'])
+    else:
+        azimuth_range = None
+    method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csc", impl="cython")[0]
+    if 'filename' in config['detector_config'].keys():
+        detector = pyFAI.detectors.NexusDetector(config['detector_config']['filename'])
+    elif 'splineFile' in config['detector_config'].keys():
+        detector = pyFAI.detectors.Detector(splineFile=config['detector_config']['splineFile'])
+    else:
+        print('[WARNING] Detector config not found!')
+    ai = AI.AzimuthalIntegrator(dist=config['dist'],
+                                poni1=config['poni1'],
+                                poni2=config['poni2'],
+                                rot1=config['rot1'],
+                                rot2=config['rot2'],
+                                rot3=config['rot3'],
+                                detector=detector,
+                                wavelength=config['wavelength'])
     for url in urls:
-        saveIntH5Path = os.path.join(data.savePath, 'h5_pyFAI_integrated',
-                                     data.dataset + '_pyFAI_%s.h5' % (url.split('/')[1]))
+        os.sched_setaffinity(0, [int(float(int(url.split('/')[1].split('.')[0])-1) % multiprocessing.cpu_count())])
+        saveIntH5Path = os.path.join(data.savePath, 'h5_pyFAI_integrated', data.dataset + '_pyFAI_%s.h5' % (url.split('/')[1]))
         checkDoneIntegration = os.path.exists(saveIntH5Path)
         if checkDoneIntegration:
             print('%s Already processed!'%url)
             continue
-        mask = fabio.open(config['mask_file']).data
-        if config['do_dark']:
-            dark = fabio.open(config['dark_current'][0]).data
-        else:
-            dark = None
-        if config['do_flat']:
-            flat = fabio.open(config['flat_field'][0]).data
-        else:
-            flat = None
-        if config['do_radial_range']:
-            radial_range = (config['radial_range_min'], config['radial_range_max'])
-        else:
-            radial_range = None
-        if config['do_azimuthal_range']:
-            azimuth_range = (config['azimuth_range_min'], config['azimuth_range_max'])
-        else:
-            azimuth_range = None
-        method = pyFAI.method_registry.IntegrationMethod.select_method(dim=1, split="full", algo="csr", impl="cython",
-                                                                       target='cpu')[0]
-        if 'filename' in config['detector_config'].keys():
-            detector = pyFAI.detectors.NexusDetector(config['detector_config']['filename'])
-        elif 'splineFile' in config['detector_config'].keys():
-            detector = pyFAI.detectors.Detector(splineFile=config['detector_config']['splineFile'])
-        else:
-            print('[WARNING] Detector config not found!')
-        ai = AI.AzimuthalIntegrator(dist=config['dist'],
-                                    poni1=config['poni1'],
-                                    poni2=config['poni2'],
-                                    rot1=config['rot1'],
-                                    rot2=config['rot2'],
-                                    rot3=config['rot3'],
-                                    detector=detector,
-                                    wavelength=config['wavelength'])
         with h5py.File(data.dataPath, 'r') as h5In:
+            frameStackShape = [h5In[url].shape[0],h5In[url].shape[1],h5In[url].shape[2]]
             result = np.empty((h5In[url].shape[0], config['nbpt_rad']), dtype=np.float32)
             monitor = h5In[url.split('/')[1]]['measurement'][data.beamMonitor][:] * 1e-6
+        resultBuffer = []
+        readBuffer = np.zeros((frameStackShape[1],frameStackShape[2]),dtype='uint32')
         with h5py.File(os.path.join(os.path.dirname(data.dataPath),'scan%04d/%s_0000.h5'%(int(url.split('/')[1].split('.')[0]),data.xrddetector)), 'r') as h5In:
-            a = time.time()
-            frames = h5In['entry_0000/measurement/data'][:].astype('float32')
-            print('Scan %s took %ssec to load'%(int(url.split('/')[1].split('.')[0]),time.time()-a))
-        for image in range(frames.shape[0]):
-            resultBuffer = ai.integrate1d_ng(frames[image, :, :],
-                                             config['nbpt_rad'],
-                                             mask=mask,
-                                             method=method,
-                                             dark=dark,
-                                             flat=flat,
-                                             radial_range=radial_range,
-                                             azimuth_range=azimuth_range,
-                                             polarization_factor=float(config['polarization_factor']),
-                                             unit=config['unit']
-                                             )
-            result[image, :] = resultBuffer.intensity / monitor[image]
-        saveh5.saveIntegrateH5(saveIntH5Path, resultBuffer, 'XRDCT: pyFAI integration scan %s' % (url.split('/')[1]))
-        print('[INFO] %s DONE!' % saveIntH5Path)
+            for image in range(frameStackShape[0]):
+                h5In['entry_0000/measurement/data'].read_direct(readBuffer, np.s_[image,:,:], np.s_[:,:])
+                resultBuffer.append(ai.integrate1d_ng(readBuffer,
+                                                 config['nbpt_rad'],
+                                                 mask=mask,
+                                                 method=method,
+                                                 dark=dark,
+                                                 flat=flat,
+                                                 radial_range=radial_range,
+                                                 azimuth_range=azimuth_range,
+                                                 polarization_factor=float(config['polarization_factor']),
+                                                 unit=config['unit']
+                                                 ).intensity
+                                   )
+            result = resultBuffer / monitor[:,None]
+        resultSave = ai.integrate1d_ng(readBuffer,config['nbpt_rad'],mask=mask,method=method,dark=dark,flat=flat,radial_range=radial_range,azimuth_range=azimuth_range,polarization_factor=float(config['polarization_factor']),unit=config['unit'])
+        saveh5.saveIntegrateH5(saveIntH5Path, resultSave, 'XRDCT: pyFAI integration scan %s' % (url.split('/')[1]))
+        print('[INFO] %s DONE! Took %s seconds!' %(saveIntH5Path,time.time()-startTime))
         with h5py.File(saveIntH5Path, 'r+') as h5In:
             del h5In['entry/results/data']
             h5In.create_dataset('entry/results/data', data=result)
-
 
 class Integrate:
     """
@@ -118,12 +124,29 @@ class Integrate:
         integrator(chunk, self.jsonPath, self.data)
 
     def integrate1d(self):
-        chunks = [self.data.dataUrls[proc::int(multiprocessing.cpu_count())] for proc in
-                  range(int(multiprocessing.cpu_count()))]
+        chunks = [self.data.dataUrls[proc::nbprocs] for proc in
+                  range(nbprocs)]
         start_time = time.time()
-        with multiprocessing.Pool(int(multiprocessing.cpu_count())) as pool:
+        with multiprocessing.Pool(nbprocs) as pool:
             for _ in pool.imap_unordered(self.wrap, chunks):
                 pass
         print('[INFO] Took: %4dsec, %4dFPS' % (
             time.time() - start_time,
             (len(self.data.dataUrls) * len(self.data.rot[0, :])) / (time.time() - start_time)))
+
+            
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        

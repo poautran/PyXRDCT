@@ -28,10 +28,13 @@
 import json
 import multiprocessing
 import time
+import os
 
 nbprocs = int(multiprocessing.cpu_count())
 try:
     nbprocs = int(os.environ['SLURM_CPUS_ON_NODE'])
+except:
+    print("[WARNING] Can't find SLURM_CPUS_ON_NODE")
 
 def integrator(urls, jsonPath, data):
     global detector

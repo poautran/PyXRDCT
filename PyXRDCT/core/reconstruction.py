@@ -317,6 +317,7 @@ class Reconstruction:
         with multiprocessing.Pool(nbprocs) as pool:
             for result in pool.map(self.parallel_histogram, dataChunks):
                 xrfDataSino.extend(result)
+        xrfDataSino = np.array(xrfDataSino)
         for energyVal in range(xrfData.shape[2]):
             xrfDataSino[:, :, energyVal] = shift_sino(xrfDataSino.T, shift)
         sinoChunks = [xrfDataSino[:, :, proc * 100:(proc * 100) + 100] for proc in range(int(xrfData.shape[2] / 100))]

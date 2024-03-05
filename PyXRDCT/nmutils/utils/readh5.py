@@ -53,11 +53,11 @@ class Input:
         self.expPath = os.path.join('/', *dataPath.split('/')[:5])
         if session == 'Default':
             self.session = os.path.join(*dataPath.split('/')[5:6])
-            self.savePath = os.path.join(self.expPath, self.session, 'processed/xrdct_analysis', self.sample,
+            self.savePath = os.path.join(self.expPath, self.session, 'PROCESSED_DATA', self.sample,
                                          self.dataset)
         else:
             self.session = session
-            self.savePath = os.path.join(self.expPath, self.session, 'xrdct_analysis', self.sample, self.dataset)
+            self.savePath = os.path.join(self.expPath, self.session, 'PROCESSED_DATA', self.sample, self.dataset)
         saveh5.makeSaveDirs(self.savePath)
         print('[INFO] Data will be saved in %s!' % self.savePath)
 
